@@ -52,18 +52,26 @@ export class TemporalClient {
     const workflowId = options?.workflowId || `application-workflow-${applicationId}`
     const taskQueue = options?.taskQueue || 'application-task-queue'
 
-    const handle = await client.workflow.start('ApplicationWorkflow', {
-      args: [applicationId, deadline],
-      taskQueue,
-      workflowId,
-      // Set workflow execution timeout to 1 year (applications can be long-running)
-      workflowExecutionTimeout: '365d',
-      // Set workflow run timeout to 30 days (individual runs shouldn't take that long)
-      workflowRunTimeout: '30d',
-    })
-
-    console.log(`Started workflow ${workflowId} for application ${applicationId}`)
-    return handle
+    try {
+      const handle = await client.workflow.start('ApplicationWorkflow', {
+        args: [applicationId, deadline],
+        taskQueue,
+        workflowId,
+        // Set workflow execution timeout to 1 year (applications can be long-running)
+        workflowExecutionTimeout: '365d',
+        // Set workflow run timeout to 30 days (individual runs shouldn't take that long)
+        workflowRunTimeout: '30d',
+      })
+      console.log(`Started workflow ${workflowId} for application ${applicationId}`)
+      return handle
+    } catch (err: any) {
+      // If a workflow with the same ID is already running, return a handle to it (idempotent start)
+      if (err && (err.name === 'WorkflowExecutionAlreadyStartedError' || String(err).includes('Workflow execution already started'))) {
+        console.warn(`Workflow ${workflowId} already started, returning existing handle`)
+        return client.workflow.getHandle(workflowId)
+      }
+      throw err
+    }
   }
 
   static async signalWorkflow(

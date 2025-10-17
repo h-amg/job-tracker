@@ -1,4 +1,10 @@
-import { type ApplicationStatus } from "@/lib/data/job-applications-data";
+type ApplicationStatus =
+  | "Active"
+  | "Interview"
+  | "Offer"
+  | "Rejected"
+  | "Withdrawn"
+  | "Archived";
 import {
   CheckCircle2Icon,
   ClockIcon,

@@ -1,7 +1,7 @@
 "use client";
 
-import { useState } from "react";
-import { mockApplications } from "@/lib/data/job-applications-data";
+import { useEffect, useState } from "react";
+import { applicationApi } from "@/lib/api-client";
 import { ApplicationCard } from "@/components/features/application-card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -9,11 +9,40 @@ import { ArchiveIcon, SearchIcon } from "lucide-react";
 
 export function Archived() {
   const [searchQuery, setSearchQuery] = useState("");
+  const [applications, setApplications] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    const load = async () => {
+      setLoading(true);
+      setError(null);
+      try {
+        const res = await applicationApi.getApplications({ includeArchived: true });
+        if (res.success && res.data) {
+          const archivedOnly = res.data.filter((a: any) => a.status === "Archived");
+          const converted = archivedOnly.map((a: any) => ({
+            ...a,
+            deadline: new Date(a.deadline),
+            createdAt: new Date(a.createdAt),
+            updatedAt: new Date(a.updatedAt),
+            interviewDate: a.interviewDate ? new Date(a.interviewDate) : undefined,
+          }));
+          setApplications(converted);
+        } else {
+          throw new Error(res.error || "Failed to fetch archived applications");
+        }
+      } catch (e) {
+        setError(e instanceof Error ? e.message : "Failed to load archived applications");
+      } finally {
+        setLoading(false);
+      }
+    };
+    load();
+  }, []);
 
   // Filter archived applications
-  const archivedApplications = mockApplications.filter(
-    (app) => app.status === "Archived"
-  );
+  const archivedApplications = applications;
 
   // Apply search
   const filteredApplications = archivedApplications.filter((app) => {
@@ -23,6 +52,23 @@ export function Archived() {
       app.role.toLowerCase().includes(searchQuery.toLowerCase())
     );
   });
+
+  if (loading) {
+    return (
+      <div className="text-center py-12">
+        <p className="text-muted-foreground">Loading archived applications...</p>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="text-center py-12">
+        <p className="text-red-500 mb-4">{error}</p>
+        <Button onClick={() => location.reload()}>Retry</Button>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-8">

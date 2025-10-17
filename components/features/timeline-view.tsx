@@ -1,7 +1,18 @@
-import {
-  type TimelineEvent,
-  type ApplicationStatus,
-} from "@/lib/data/job-applications-data";
+type ApplicationStatus =
+  | "Active"
+  | "Interview"
+  | "Offer"
+  | "Rejected"
+  | "Withdrawn"
+  | "Archived";
+
+interface TimelineEvent {
+  id: string;
+  applicationId: string;
+  status: ApplicationStatus;
+  note?: string;
+  timestamp: Date;
+}
 import {
   CheckCircle2Icon,
   ClockIcon,

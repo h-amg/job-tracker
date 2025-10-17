@@ -43,28 +43,21 @@ export async function POST(request: NextRequest) {
     // Validate input
     const validatedData = CreateApplicationSchema.parse(body)
     
-    // Start Temporal workflow
+    // Create application first to get real ID
+    const application = await ApplicationService.createApplication(validatedData)
+
+    // Start Temporal workflow using real application ID
     let workflowId: string | undefined
     try {
       const workflowHandle = await TemporalClient.startApplicationWorkflow(
-        'temp-id', // We'll update this after creating the application
+        application.id,
         validatedData.deadline
       )
       workflowId = workflowHandle.workflowId
+      // Persist workflowId on the application
+      await ApplicationService.setWorkflowId(application.id, workflowId)
     } catch (workflowError) {
       console.warn('Failed to start workflow, continuing without it:', workflowError)
-    }
-
-    // Create application
-    const application = await ApplicationService.createApplication(validatedData, workflowId)
-
-    // Update workflow with actual application ID if workflow was created
-    if (workflowId) {
-      try {
-        await TemporalClient.signalWorkflow(workflowId, 'updateApplicationId', [application.id])
-      } catch (signalError) {
-        console.warn('Failed to signal workflow with application ID:', signalError)
-      }
     }
 
     return NextResponse.json({

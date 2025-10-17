@@ -70,17 +70,16 @@ export class ApiClient {
   }
 
   async get<T>(endpoint: string, params?: Record<string, any>): Promise<ApiResponse<T>> {
-    const url = new URL(endpoint, this.baseUrl)
-    
-    if (params) {
-      Object.entries(params).forEach(([key, value]) => {
-        if (value !== undefined && value !== null) {
-          url.searchParams.append(key, String(value))
-        }
-      })
-    }
+    const qs = params
+      ? Object.entries(params)
+          .filter(([, value]) => value !== undefined && value !== null)
+          .map(([key, value]) => `${encodeURIComponent(key)}=${encodeURIComponent(String(value))}`)
+          .join('&')
+      : ''
 
-    return this.request<T>(url.pathname + url.search, {
+    const path = qs ? `${endpoint}?${qs}` : endpoint
+
+    return this.request<T>(path, {
       method: 'GET',
     })
   }

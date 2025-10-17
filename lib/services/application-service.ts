@@ -8,11 +8,31 @@ export const CreateApplicationSchema = z.object({
   role: z.string().min(1, 'Role is required'),
   jobDescription: z.string().min(1, 'Job description is required'),
   resumeUrl: z.string().optional(),
-  deadline: z.date(),
+  // Accept ISO date strings from JSON and coerce to Date
+  deadline: z.coerce.date(),
   notes: z.string().optional(),
   salary: z.string().optional(),
   location: z.string().optional(),
-  jobType: z.nativeEnum(JobType).optional(),
+  // Normalize UI labels like "Full-time" to Prisma enum values
+  jobType: z
+    .preprocess((val) => {
+      if (typeof val !== 'string') return val
+      const normalized = val.toLowerCase().replace(/[^a-z]/g, '')
+      switch (normalized) {
+        case 'fulltime':
+          return JobType.FullTime
+        case 'parttime':
+          return JobType.PartTime
+        case 'contract':
+          return JobType.Contract
+        case 'internship':
+          return JobType.Internship
+        default:
+          // If already enum string (e.g., "FullTime") or unknown, pass through
+          return val as any
+      }
+    }, z.nativeEnum(JobType))
+    .optional(),
 })
 
 export const UpdateApplicationSchema = CreateApplicationSchema.partial()
@@ -20,7 +40,8 @@ export const UpdateApplicationSchema = CreateApplicationSchema.partial()
 export const UpdateStatusSchema = z.object({
   status: z.nativeEnum(ApplicationStatus),
   notes: z.string().optional(),
-  interviewDate: z.date().optional(),
+  // Accept datetime-local string and coerce to Date
+  interviewDate: z.coerce.date().optional(),
 })
 
 export type CreateApplicationInput = z.infer<typeof CreateApplicationSchema>
@@ -43,6 +64,13 @@ export class ApplicationService {
           orderBy: { timestamp: 'desc' },
         },
       },
+    })
+  }
+
+  static async setWorkflowId(id: string, workflowId: string) {
+    return await prisma.application.update({
+      where: { id },
+      data: { workflowId },
     })
   }
 
