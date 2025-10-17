@@ -42,8 +42,21 @@ export interface WorkflowState {
 
 // Main workflow function
 export async function ApplicationWorkflow(applicationId: string, deadline: Date | string): Promise<void> {
-  // Ensure deadline is a Date object
-  const deadlineDate = deadline instanceof Date ? deadline : new Date(deadline)
+  // Ensure deadline is a Date object and validate it
+  let deadlineDate: Date
+  
+  if (deadline instanceof Date) {
+    deadlineDate = deadline
+  } else if (typeof deadline === 'string' || typeof deadline === 'number') {
+    deadlineDate = new Date(deadline)
+  } else {
+    throw new Error(`Invalid deadline provided: ${deadline}. Expected Date object, string, or number.`)
+  }
+  
+  // Validate the date is valid
+  if (isNaN(deadlineDate.getTime())) {
+    throw new Error(`Invalid deadline date: ${deadline}. The date could not be parsed.`)
+  }
   
   log.info(`Starting ApplicationWorkflow for application ${applicationId}`, {
     applicationId,

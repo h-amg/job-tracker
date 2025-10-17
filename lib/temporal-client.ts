@@ -57,7 +57,7 @@ export class TemporalClient {
 
     try {
       const handle = await client.workflow.start('ApplicationWorkflow', {
-        args: [applicationId, deadline],
+        args: [applicationId, deadlineDate],
         taskQueue,
         workflowId,
         // Set workflow execution timeout to 1 year (applications can be long-running)
