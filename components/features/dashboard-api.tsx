@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { ApplicationStatus } from "@prisma/client";
 import { applicationApi, useApiCall } from "@/lib/api-client";
 import { StatsOverview } from "@/components/features/stats-overview";
@@ -71,16 +71,16 @@ export function Dashboard() {
   const [error, setError] = useState<string | null>(null);
 
   // API call hooks
-  const { execute: fetchApplications, loading: fetchLoading } = useApiCall<Application[]>();
+  const { execute: fetchApplications } = useApiCall<Application[]>();
   const { execute: createApplication, loading: createLoading } = useApiCall<Application>();
-  const { execute: updateStatus, loading: updateLoading } = useApiCall<Application>();
+  const { execute: updateStatus } = useApiCall<Application>();
 
   // Fetch applications on component mount
   useEffect(() => {
     loadApplications();
-  }, []);
+  }, [loadApplications]);
 
-  const loadApplications = async () => {
+  const loadApplications = useCallback(async () => {
     setLoading(true);
     setError(null);
     
@@ -106,7 +106,7 @@ export function Dashboard() {
     } finally {
       setLoading(false);
     }
-  };
+  }, [fetchApplications, statusFilter, searchQuery]);
 
   // Filter applications (client-side filtering for better UX)
   const filteredApplications = applications.filter((app) => {
@@ -144,7 +144,7 @@ export function Dashboard() {
     setStatusFormOpen(true);
   };
 
-  const handleCreateApplication = async (data: any) => {
+  const handleCreateApplication = async (data: Partial<Application>) => {
     try {
       await createApplication(async () => {
         const response = await applicationApi.createApplication(data);
@@ -159,12 +159,12 @@ export function Dashboard() {
         
         return response;
       });
-    } catch (err) {
+    } catch {
       toast.error('Failed to create application');
     }
   };
 
-  const handleStatusUpdateSubmit = async (data: any) => {
+  const handleStatusUpdateSubmit = async (data: { status: ApplicationStatus; notes?: string; interviewDate?: Date }) => {
     if (!selectedAppId) return;
 
     try {
@@ -186,7 +186,7 @@ export function Dashboard() {
         
         return response;
       });
-    } catch (err) {
+    } catch {
       toast.error('Failed to update status');
     }
   };

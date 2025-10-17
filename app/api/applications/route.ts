@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { ApplicationService, CreateApplicationSchema } from '@/lib/services/application-service'
 import { TemporalClient } from '@/lib/temporal-client'
+import { ApplicationStatus } from '@prisma/client'
 import { z } from 'zod'
 
 // GET /api/applications - Fetch all applications with optional filtering
@@ -13,7 +14,7 @@ export async function GET(request: NextRequest) {
     const includeArchived = searchParams.get('includeArchived') === 'true'
 
     const applications = await ApplicationService.getApplications({
-      status: status as any,
+      status: status as ApplicationStatus | undefined,
       search: search || undefined,
       includeArchived,
     })

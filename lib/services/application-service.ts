@@ -30,7 +30,7 @@ export const CreateApplicationSchema = z.object({
           return JobType.Internship
         default:
           // If already enum string (e.g., "FullTime") or unknown, pass through
-          return val as any
+          return val as JobType
       }
     }, z.nativeEnum(JobType))
     .optional(),
@@ -80,7 +80,7 @@ export class ApplicationService {
     search?: string
     includeArchived?: boolean
   }) {
-    const where: any = {}
+    const where: Record<string, unknown> = {}
 
     if (filters?.status) {
       where.status = filters.status

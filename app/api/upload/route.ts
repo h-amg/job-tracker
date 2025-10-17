@@ -24,7 +24,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Validate input
-    const validatedData = UploadSchema.parse({ type })
+    UploadSchema.parse({ type })
 
     // Validate file
     const validation = BlobService.validateFile(file)

@@ -66,7 +66,7 @@ export function ApplicationForm({
     onOpenChange(false);
   };
 
-  const handleChange = (field: keyof Application, value: any) => {
+  const handleChange = (field: keyof Application, value: string | Date | ApplicationStatus) => {
     setFormData((prev) => ({ ...prev, [field]: value }));
   };
 
@@ -272,7 +272,7 @@ export function ApplicationForm({
               />
 
               <p className="text-xs text-muted-foreground">
-                Default is 4 weeks from today. You'll receive reminders as the
+                Default is 4 weeks from today. You&apos;ll receive reminders as the
                 deadline approaches.
               </p>
             </div>

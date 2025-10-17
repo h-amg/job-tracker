@@ -3,13 +3,14 @@
 import { useEffect, useState } from "react";
 import { applicationApi } from "@/lib/api-client";
 import { ApplicationCard } from "@/components/features/application-card";
+import { type Application } from "@/lib/data/job-applications-data";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { ArchiveIcon, SearchIcon } from "lucide-react";
 
 export function Archived() {
   const [searchQuery, setSearchQuery] = useState("");
-  const [applications, setApplications] = useState<any[]>([]);
+  const [applications, setApplications] = useState<Application[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -20,8 +21,8 @@ export function Archived() {
       try {
         const res = await applicationApi.getApplications({ includeArchived: true });
         if (res.success && res.data) {
-          const archivedOnly = res.data.filter((a: any) => a.status === "Archived");
-          const converted = archivedOnly.map((a: any) => ({
+          const archivedOnly = res.data.filter((a: Application) => a.status === "Archived");
+          const converted = archivedOnly.map((a: Application) => ({
             ...a,
             deadline: new Date(a.deadline),
             createdAt: new Date(a.createdAt),

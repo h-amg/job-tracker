@@ -191,7 +191,7 @@ export function NotificationCenter({
                 No notifications yet
               </p>
               <p className="text-xs text-muted-foreground mt-1">
-                You'll see updates about your applications here
+                You&apos;ll see updates about your applications here
               </p>
             </div>
           ) : (
