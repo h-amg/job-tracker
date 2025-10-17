@@ -140,12 +140,7 @@ export class TemporalClient {
     return history.events ? history.events.slice(-maxEvents) : [] // Return last N events
   }
 
-  static async listWorkflows(filters?: {
-    workflowType?: string
-    status?: string
-    startTime?: Date
-    endTime?: Date
-  }) {
+  static async listWorkflows() {
     const client = await this.getClient()
     
     const workflows = await client.workflowService.listWorkflowExecutions({

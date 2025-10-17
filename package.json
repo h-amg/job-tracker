@@ -104,7 +104,7 @@
     "react-hot-toast": "latest",
     "react-intersection-observer": "latest",
     "react-konva": "latest",
-    "react-leaflet": "latest",
+    "react-leaflet": "^4.2.1",
     "react-markdown": "latest",
     "react-masonry-css": "latest",
     "react-pdf": "latest",

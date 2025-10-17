@@ -81,7 +81,7 @@ export function Header({ onAddApplication }: HeaderProps) {
             {navItems.map((item) => {
               const Icon = item.icon;
               return (
-                <Link key={item.path} href={item.path as any}>
+                <Link key={item.path} href={item.path}>
                   <Button
                     variant={isActive(item.path) ? "secondary" : "ghost"}
                     size="sm"
@@ -120,7 +120,7 @@ export function Header({ onAddApplication }: HeaderProps) {
           {navItems.map((item) => {
             const Icon = item.icon;
             return (
-              <Link key={item.path} href={item.path as any}>
+              <Link key={item.path} href={item.path}>
                 <Button
                   variant={isActive(item.path) ? "secondary" : "ghost"}
                   size="sm"
