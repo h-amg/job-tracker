@@ -1,0 +1,98 @@
+import { NextRequest, NextResponse } from 'next/server'
+import { ApplicationService, CreateApplicationSchema } from '@/lib/services/application-service'
+import { TemporalClient } from '@/lib/temporal-client'
+import { z } from 'zod'
+
+// GET /api/applications - Fetch all applications with optional filtering
+export async function GET(request: NextRequest) {
+  try {
+    const { searchParams } = new URL(request.url)
+    
+    const status = searchParams.get('status')
+    const search = searchParams.get('search')
+    const includeArchived = searchParams.get('includeArchived') === 'true'
+
+    const applications = await ApplicationService.getApplications({
+      status: status as any,
+      search: search || undefined,
+      includeArchived,
+    })
+
+    return NextResponse.json({
+      success: true,
+      data: applications,
+    })
+  } catch (error) {
+    console.error('Error fetching applications:', error)
+    return NextResponse.json(
+      {
+        success: false,
+        error: 'Failed to fetch applications',
+        message: error instanceof Error ? error.message : 'Unknown error',
+      },
+      { status: 500 }
+    )
+  }
+}
+
+// POST /api/applications - Create new application
+export async function POST(request: NextRequest) {
+  try {
+    const body = await request.json()
+    
+    // Validate input
+    const validatedData = CreateApplicationSchema.parse(body)
+    
+    // Start Temporal workflow
+    let workflowId: string | undefined
+    try {
+      const workflowHandle = await TemporalClient.startApplicationWorkflow(
+        'temp-id', // We'll update this after creating the application
+        validatedData.deadline
+      )
+      workflowId = workflowHandle.workflowId
+    } catch (workflowError) {
+      console.warn('Failed to start workflow, continuing without it:', workflowError)
+    }
+
+    // Create application
+    const application = await ApplicationService.createApplication(validatedData, workflowId)
+
+    // Update workflow with actual application ID if workflow was created
+    if (workflowId) {
+      try {
+        await TemporalClient.signalWorkflow(workflowId, 'updateApplicationId', [application.id])
+      } catch (signalError) {
+        console.warn('Failed to signal workflow with application ID:', signalError)
+      }
+    }
+
+    return NextResponse.json({
+      success: true,
+      data: application,
+      message: 'Application created successfully',
+    }, { status: 201 })
+  } catch (error) {
+    console.error('Error creating application:', error)
+    
+    if (error instanceof z.ZodError) {
+      return NextResponse.json(
+        {
+          success: false,
+          error: 'Validation error',
+          message: error.errors.map(e => `${e.path.join('.')}: ${e.message}`).join(', '),
+        },
+        { status: 400 }
+      )
+    }
+
+    return NextResponse.json(
+      {
+        success: false,
+        error: 'Failed to create application',
+        message: error instanceof Error ? error.message : 'Unknown error',
+      },
+      { status: 500 }
+    )
+  }
+}
