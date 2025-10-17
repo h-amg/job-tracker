@@ -41,7 +41,7 @@ export class TemporalClient {
 
   static async startApplicationWorkflow(
     applicationId: string,
-    deadline: Date,
+    deadline: Date | string,
     options?: {
       workflowId?: string
       taskQueue?: string
@@ -51,6 +51,9 @@ export class TemporalClient {
     
     const workflowId = options?.workflowId || `application-workflow-${applicationId}`
     const taskQueue = options?.taskQueue || 'application-task-queue'
+    
+    // Ensure deadline is a Date object
+    const deadlineDate = deadline instanceof Date ? deadline : new Date(deadline)
 
     try {
       const handle = await client.workflow.start('ApplicationWorkflow', {
