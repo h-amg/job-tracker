@@ -13,6 +13,7 @@ import {
   ExternalLinkIcon,
   AlertCircleIcon,
   FileTextIcon,
+  ArchiveIcon,
 } from "lucide-react";
 import Link from "next/link";
 
@@ -32,12 +33,14 @@ interface ApplicationCardProps {
     jobType?: string;
   };
   onStatusUpdate?: (id: string) => void;
+  onArchive?: (id: string) => void;
   showActions?: boolean;
 }
 
 export function ApplicationCard({
   application,
   onStatusUpdate,
+  onArchive,
   showActions = true,
 }: ApplicationCardProps) {
   const [coverLetterOpen, setCoverLetterOpen] = useState(false);
@@ -63,7 +66,22 @@ export function ApplicationCard({
           )}
           <p className="text-muted-foreground">{application.company}</p>
         </div>
-        <StatusBadge status={application.status} size="sm" />
+        <div className="flex items-center gap-2">
+          <StatusBadge status={application.status} size="sm" />
+          {showActions && 
+           onArchive && 
+           ["Rejected", "Offer", "Withdrawn"].includes(application.status) && (
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => onArchive(application.id)}
+              className="h-8 w-8 p-0 hover:bg-muted"
+              title="Archive application"
+            >
+              <ArchiveIcon className="h-4 w-4" />
+            </Button>
+          )}
+        </div>
       </div>
 
       {/* Details Grid */}

@@ -24,8 +24,6 @@ export const updateStatusSignal = defineSignal<[string, string?]>('updateStatus'
 export const extendDeadlineSignal = defineSignal<[number]>('extendDeadline')
 export const cancelWorkflowSignal = defineSignal<[string?]>('cancelWorkflow')
 
-// Define queries
-export const getWorkflowStateQuery = defineQuery<WorkflowState>('getWorkflowState')
 
 // Workflow state interface
 export interface WorkflowState {
@@ -40,6 +38,10 @@ export interface WorkflowState {
   updatedAt: Date
   cancelled?: boolean
 }
+
+// Define queries
+export const getWorkflowStateQuery = defineQuery<WorkflowState>('getWorkflowState')
+
 
 // Main workflow function
 export async function ApplicationWorkflow(applicationId: string, deadline: Date | string): Promise<void> {

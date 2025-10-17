@@ -20,6 +20,49 @@ import {
 import { SearchIcon, FilterIcon, SortDescIcon, LoaderIcon } from "lucide-react";
 import { toast } from "sonner";
 
+// Type definitions for API responses
+interface Application {
+  id: string;
+  company: string;
+  role: string;
+  jobDescription: string;
+  resumeUrl?: string;
+  coverLetterUrl?: string;
+  status: ApplicationStatus;
+  deadline: string; // ISO string from API
+  createdAt: string;
+  updatedAt: string;
+  notes?: string;
+  interviewDate?: string;
+  salary?: string;
+  location?: string;
+  jobType?: string;
+  timelineEvents?: TimelineEvent[];
+  notifications?: Notification[];
+  // Add missing properties for compatibility
+  resumeLink: string;
+  coverLetterLink?: string;
+}
+
+interface TimelineEvent {
+  id: string;
+  applicationId: string;
+  status: ApplicationStatus;
+  note?: string;
+  timestamp: string;
+}
+
+interface Notification {
+  id: string;
+  applicationId: string;
+  type: string;
+  title: string;
+  message: string;
+  status: string;
+  timestamp: string;
+  read: boolean;
+}
+
 export function Dashboard() {
   const [applications, setApplications] = useState<ApiApplication[]>([]);
   const [searchQuery, setSearchQuery] = useState("");
@@ -32,9 +75,10 @@ export function Dashboard() {
   const [error, setError] = useState<string | null>(null);
 
   // API call hooks
-  const { execute: fetchApplications } = useApiCall<ApiApplication[]>();
-  const { execute: createApplication, loading: createLoading } = useApiCall<ApiApplication>();
-  const { execute: updateStatus } = useApiCall<ApiApplication>();
+  const { execute: fetchApplications } = useApiCall<Application[]>();
+  const { execute: createApplication, loading: createLoading } = useApiCall<Application>();
+  const { execute: updateStatus } = useApiCall<Application>();
+  const { execute: archiveApplication } = useApiCall<Application>();
 
   const loadApplications = useCallback(async () => {
     setLoading(true);
@@ -49,12 +93,12 @@ export function Dashboard() {
         });
         
         if (response.success && response.data) {
-          setApplications(response.data);
+          setApplications(response.data as Application[]);
         } else {
           throw new Error(response.error || 'Failed to fetch applications');
         }
         
-        return response;
+        return response as any;
       });
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to load applications');
@@ -105,7 +149,7 @@ export function Dashboard() {
     setStatusFormOpen(true);
   };
 
-  const handleCreateApplication = async (data: Partial<Application>) => {
+  const handleCreateApplication = async (data: any) => {
     try {
       await createApplication(async () => {
         // Convert Date to string for API
@@ -117,14 +161,14 @@ export function Dashboard() {
         const response = await applicationApi.createApplication(apiData);
         
         if (response.success && response.data) {
-          setApplications(prev => [response.data!, ...prev]);
+          setApplications(prev => [response.data as Application, ...prev]);
           toast.success('Application created successfully');
           setFormOpen(false);
         } else {
           throw new Error(response.error || 'Failed to create application');
         }
         
-        return response;
+        return response as any;
       });
     } catch {
       toast.error('Failed to create application');
@@ -147,7 +191,7 @@ export function Dashboard() {
         if (response.success && response.data) {
           setApplications(prev => 
             prev.map(app => 
-              app.id === selectedAppId ? response.data! : app
+              app.id === selectedAppId ? response.data as Application : app
             )
           );
           toast.success('Status updated successfully');
@@ -157,10 +201,30 @@ export function Dashboard() {
           throw new Error(response.error || 'Failed to update status');
         }
         
-        return response;
+        return response as any;
       });
     } catch {
       toast.error('Failed to update status');
+    }
+  };
+
+  const handleArchiveApplication = async (id: string) => {
+    try {
+      await archiveApplication(async () => {
+        const response = await applicationApi.updateStatus(id, { status: 'Archived' });
+        
+        if (response.success && response.data) {
+          // Optimistically remove from the list
+          setApplications(prev => prev.filter(app => app.id !== id));
+          toast.success('Application archived successfully');
+        } else {
+          throw new Error(response.error || 'Failed to archive application');
+        }
+        
+        return response as any;
+      });
+    } catch {
+      toast.error('Failed to archive application');
     }
   };
 
@@ -174,6 +238,9 @@ export function Dashboard() {
     createdAt: new Date(app.createdAt),
     updatedAt: new Date(app.updatedAt),
     interviewDate: app.interviewDate ? new Date(app.interviewDate) : undefined,
+    resumeLink: app.resumeUrl || '',
+    coverLetterLink: app.coverLetterUrl,
+    jobType: app.jobType as "Full-time" | "Part-time" | "Contract" | "Internship" | undefined,
   }));
 
   if (loading) {
@@ -324,6 +391,7 @@ export function Dashboard() {
                   key={app.id}
                   application={convertedApp}
                   onStatusUpdate={handleStatusUpdate}
+                  onArchive={handleArchiveApplication}
                 />
               );
             })}
@@ -348,6 +416,9 @@ export function Dashboard() {
             createdAt: new Date(selectedApp.createdAt),
             updatedAt: new Date(selectedApp.updatedAt),
             interviewDate: selectedApp.interviewDate ? new Date(selectedApp.interviewDate) : undefined,
+            resumeLink: selectedApp.resumeUrl || '',
+            coverLetterLink: selectedApp.coverLetterUrl,
+            jobType: selectedApp.jobType as "Full-time" | "Part-time" | "Contract" | "Internship" | undefined,
           }}
           open={statusFormOpen}
           onOpenChange={setStatusFormOpen}
