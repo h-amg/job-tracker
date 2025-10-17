@@ -46,11 +46,6 @@ export function Header({ onAddApplication }: HeaderProps) {
       icon: LayoutDashboardIcon,
     },
     {
-      label: "Active Applications",
-      path: "/active",
-      icon: BriefcaseIcon,
-    },
-    {
       label: "Archived",
       path: "/archived",
       icon: ArchiveIcon,
