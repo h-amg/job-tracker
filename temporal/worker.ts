@@ -30,8 +30,6 @@ async function run() {
     maxConcurrentActivityTaskExecutions: 10,
     maxConcurrentWorkflowTaskExecutions: 10,
     maxConcurrentLocalActivityExecutions: 10,
-    // Enable graceful shutdown
-    gracefulShutdownTimeout: '30s',
   })
 
   console.log('Temporal worker created successfully')

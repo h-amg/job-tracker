@@ -1,7 +1,13 @@
 "use client"
 
-import { useTheme } from "next-themes"
 import { Toaster as Sonner } from "sonner"
+
+// Stub for useTheme if next-themes is not installed
+function useTheme() {
+  return {
+    theme: 'system' as const,
+  }
+}
 
 type ToasterProps = React.ComponentProps<typeof Sonner>
 

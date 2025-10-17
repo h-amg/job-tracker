@@ -21,14 +21,15 @@ export function Archived() {
       try {
         const res = await applicationApi.getApplications({ includeArchived: true });
         if (res.success && res.data) {
-          const archivedOnly = res.data.filter((a: Application) => a.status === "Archived");
-          const converted = archivedOnly.map((a: Application) => ({
+          const archivedOnly = res.data.filter((a) => a.status === "Archived");
+          const converted = archivedOnly.map((a) => ({
             ...a,
+            resumeLink: a.resumeUrl,
             deadline: new Date(a.deadline),
             createdAt: new Date(a.createdAt),
             updatedAt: new Date(a.updatedAt),
             interviewDate: a.interviewDate ? new Date(a.interviewDate) : undefined,
-          }));
+          })) as Application[];
           setApplications(converted);
         } else {
           throw new Error(res.error || "Failed to fetch archived applications");

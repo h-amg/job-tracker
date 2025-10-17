@@ -38,6 +38,7 @@ export interface WorkflowState {
   lastStatusNotes?: string
   createdAt: Date
   updatedAt: Date
+  cancelled?: boolean
 }
 
 // Main workflow function
@@ -115,6 +116,7 @@ export async function ApplicationWorkflow(applicationId: string, deadline: Date 
 
   setHandler(cancelWorkflowSignal, async (reason?: string) => {
     log.info(`Received cancelWorkflow signal`, { applicationId, reason })
+    state.cancelled = true
     state.status = 'Archived'
     state.updatedAt = new Date()
   })
@@ -138,7 +140,7 @@ export async function ApplicationWorkflow(applicationId: string, deadline: Date 
     }
 
     // Check if workflow was cancelled during wait
-    if (state.status === 'Archived') {
+    if (state.cancelled || state.status === 'Archived') {
       log.info(`Workflow cancelled before deadline`, { applicationId })
       return
     }
@@ -164,7 +166,7 @@ export async function ApplicationWorkflow(applicationId: string, deadline: Date 
     await sleep(gracePeriodMs)
 
     // Check if workflow was cancelled during grace period
-    if (state.status === 'Archived') {
+    if (state.cancelled || state.status === 'Archived') {
       log.info(`Workflow cancelled during grace period`, { applicationId })
       return
     }
@@ -177,7 +179,10 @@ export async function ApplicationWorkflow(applicationId: string, deadline: Date 
     await archiveApplication(applicationId)
 
   } catch (error) {
-    log.error(`ApplicationWorkflow failed`, { applicationId, error: error.message })
+    log.error(`ApplicationWorkflow failed`, { 
+      applicationId, 
+      error: error instanceof Error ? error.message : String(error)
+    })
     state.status = 'Archived'
     state.updatedAt = new Date()
     
@@ -187,7 +192,7 @@ export async function ApplicationWorkflow(applicationId: string, deadline: Date 
     } catch (archiveError) {
       log.error(`Failed to archive application after workflow error`, { 
         applicationId, 
-        error: archiveError.message 
+        error: archiveError instanceof Error ? archiveError.message : String(archiveError)
       })
     }
     
@@ -227,7 +232,7 @@ export async function CoverLetterGenerationWorkflow(
   } catch (error) {
     log.error(`CoverLetterGenerationWorkflow failed`, { 
       applicationId, 
-      error: error.message 
+      error: error instanceof Error ? error.message : String(error)
     })
     throw error
   }

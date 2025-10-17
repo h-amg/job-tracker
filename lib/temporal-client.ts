@@ -69,7 +69,8 @@ export class TemporalClient {
       return handle
     } catch (err: unknown) {
       // If a workflow with the same ID is already running, return a handle to it (idempotent start)
-      if (err && (err.name === 'WorkflowExecutionAlreadyStartedError' || String(err).includes('Workflow execution already started'))) {
+      const error = err as { name?: string }
+      if (error && (error.name === 'WorkflowExecutionAlreadyStartedError' || String(err).includes('Workflow execution already started'))) {
         console.warn(`Workflow ${workflowId} already started, returning existing handle`)
         return client.workflow.getHandle(workflowId)
       }
@@ -102,7 +103,7 @@ export class TemporalClient {
     const client = await this.getClient()
     
     const handle = client.workflow.getHandle(workflowId)
-    await handle.cancel(reason)
+    await handle.cancel()
     
     console.log(`Cancelled workflow ${workflowId}${reason ? `: ${reason}` : ''}`)
   }
@@ -136,7 +137,7 @@ export class TemporalClient {
     const handle = client.workflow.getHandle(workflowId)
     const history = await handle.fetchHistory()
     
-    return history.events.slice(-maxEvents) // Return last N events
+    return history.events ? history.events.slice(-maxEvents) : [] // Return last N events
   }
 
   static async listWorkflows(filters?: {
@@ -149,16 +150,10 @@ export class TemporalClient {
     
     const workflows = await client.workflowService.listWorkflowExecutions({
       namespace: process.env.TEMPORAL_NAMESPACE || 'default',
-      maximumPageSize: 100,
-      filters: filters ? {
-        workflowType: filters.workflowType ? { name: filters.workflowType } : undefined,
-        startTime: filters.startTime ? { earliestTime: filters.startTime } : undefined,
-        closeTime: filters.endTime ? { latestTime: filters.endTime } : undefined,
-        status: filters.status as 'RUNNING' | 'COMPLETED' | 'FAILED' | 'CANCELED' | 'TERMINATED' | 'CONTINUED_AS_NEW' | 'TIMED_OUT',
-      } : undefined,
+      pageSize: 100,
     })
 
-    return workflows.executions
+    return workflows.executions || []
   }
 
   static async terminateWorkflow(workflowId: string, reason?: string): Promise<void> {
@@ -186,7 +181,7 @@ export class TemporalClient {
       // Try to list workflows as a health check
       await client.workflowService.listWorkflowExecutions({
         namespace: process.env.TEMPORAL_NAMESPACE || 'default',
-        maximumPageSize: 1,
+        pageSize: 1,
       })
       return true
     } catch (error) {

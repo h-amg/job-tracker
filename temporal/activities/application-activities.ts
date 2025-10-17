@@ -29,7 +29,7 @@ export async function sendDeadlineReminder(applicationId: string, deadline: Date
     })
   } catch (error) {
     log.error(`Failed to send deadline reminder for application ${applicationId}`, {
-      error: error.message,
+      error: error instanceof Error ? error.message : String(error),
     })
     throw error
   }
@@ -44,7 +44,7 @@ export async function archiveApplication(applicationId: string): Promise<void> {
     log.info(`Application ${applicationId} archived successfully`)
   } catch (error) {
     log.error(`Failed to archive application ${applicationId}`, {
-      error: error.message,
+      error: error instanceof Error ? error.message : String(error),
     })
     throw error
   }
@@ -64,7 +64,7 @@ export async function createTimelineEvent(
     log.info(`Timeline event created for application ${applicationId}`)
   } catch (error) {
     log.error(`Failed to create timeline event for application ${applicationId}`, {
-      error: error.message,
+      error: error instanceof Error ? error.message : String(error),
     })
     throw error
   }
@@ -89,7 +89,7 @@ export async function updateApplicationStatus(
     log.info(`Application status updated for ${applicationId}`)
   } catch (error) {
     log.error(`Failed to update application status for ${applicationId}`, {
-      error: error.message,
+      error: error instanceof Error ? error.message : String(error),
     })
     throw error
   }
@@ -101,6 +101,13 @@ export async function generateCoverLetter(input: {
   companyName?: string
   role?: string
 }): Promise<string> {
+  // Ensure required fields have defaults
+  const inputWithDefaults = {
+    jobDescription: input.jobDescription,
+    resumeContent: input.resumeContent,
+    companyName: input.companyName || 'the company',
+    role: input.role || 'the position',
+  }
   log.info(`Generating cover letter`, { 
     companyName: input.companyName,
     role: input.role 
@@ -108,13 +115,13 @@ export async function generateCoverLetter(input: {
 
   try {
     // Validate input
-    const validation = CoverLetterService.validateInput(input)
+    const validation = CoverLetterService.validateInput(inputWithDefaults)
     if (!validation.valid) {
       throw new Error(`Invalid input: ${validation.errors.join(', ')}`)
     }
 
     // Generate cover letter with retry
-    const coverLetter = await CoverLetterService.generateCoverLetterWithRetry(input)
+    const coverLetter = await CoverLetterService.generateCoverLetterWithRetry(inputWithDefaults)
 
     log.info(`Cover letter generated successfully`, {
       companyName: input.companyName,
@@ -125,7 +132,7 @@ export async function generateCoverLetter(input: {
     return coverLetter
   } catch (error) {
     log.error(`Failed to generate cover letter`, {
-      error: error.message,
+      error: error instanceof Error ? error.message : String(error),
       companyName: input.companyName,
       role: input.role,
     })
@@ -153,7 +160,7 @@ export async function uploadToBlob(
     return result.url
   } catch (error) {
     log.error(`Failed to upload content to blob storage`, {
-      error: error.message,
+      error: error instanceof Error ? error.message : String(error),
       filename,
       folder,
     })
@@ -175,7 +182,7 @@ export async function sendInterviewReminder(
     log.info(`Interview reminder sent for application ${applicationId}`)
   } catch (error) {
     log.error(`Failed to send interview reminder for application ${applicationId}`, {
-      error: error.message,
+      error: error instanceof Error ? error.message : String(error),
     })
     throw error
   }
@@ -193,7 +200,7 @@ export async function createCoverLetterNotification(
     log.info(`Cover letter notification created for application ${applicationId}`)
   } catch (error) {
     log.error(`Failed to create cover letter notification for application ${applicationId}`, {
-      error: error.message,
+      error: error instanceof Error ? error.message : String(error),
     })
     throw error
   }
@@ -209,7 +216,7 @@ export async function cleanupOldNotifications(olderThanDays = 30): Promise<numbe
     return result.count
   } catch (error) {
     log.error(`Failed to cleanup old notifications`, {
-      error: error.message,
+      error: error instanceof Error ? error.message : String(error),
     })
     throw error
   }
@@ -232,7 +239,7 @@ export async function getApplicationStats(): Promise<{
     return stats
   } catch (error) {
     log.error(`Failed to get application statistics`, {
-      error: error.message,
+      error: error instanceof Error ? error.message : String(error),
     })
     throw error
   }
@@ -254,7 +261,7 @@ export async function healthCheck(): Promise<{ status: string; timestamp: Date }
     return result
   } catch (error) {
     log.error(`Health check failed`, {
-      error: error.message,
+      error: error instanceof Error ? error.message : String(error),
     })
     
     const result = {
