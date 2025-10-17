@@ -20,7 +20,7 @@ export function Toaster() {
         title?: React.ReactNode;
         description?: React.ReactNode;
         action?: React.ReactNode;
-        [key: string]: any;
+        [key: string]: unknown;
       }) {
         return (
           <Toast key={id} {...props}>

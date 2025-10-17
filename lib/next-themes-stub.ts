@@ -2,7 +2,7 @@
 export function useTheme() {
   return {
     theme: 'system' as const,
-    setTheme: (theme: string) => {},
+    setTheme: () => {},
     systemTheme: 'light' as const,
     themes: ['light', 'dark', 'system'],
   }
