@@ -52,20 +52,34 @@ export function ApplicationCardSkeleton() {
 export function StatsOverviewSkeleton() {
   return (
     <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
-      {Array.from({ length: 6 }).map((_, index) => (
-        <div
-          key={index}
-          className="bg-card border border-border rounded-lg p-4 text-center"
-        >
-          <div className="flex items-center justify-center mb-2">
-            <Skeleton className="h-9 w-9 rounded-lg" />
+      {Array.from({ length: 6 }).map((_, index) => {
+        const isLastCard = index === 5; // Success Rate card (last card)
+        
+        return (
+          <div
+            key={index}
+            className={`bg-card rounded-lg p-4 text-center transition-all duration-200 ease-in-out ${
+              isLastCard 
+                ? "border-dashed border-border opacity-90" 
+                : "border-2 border-border hover:border-primary hover:-translate-y-1 hover:shadow-lg cursor-pointer"
+            }`}
+          >
+            <div className="flex items-center justify-center mb-2 relative">
+              <Skeleton className="h-9 w-9 rounded-lg" />
+              {!isLastCard && (
+                <Skeleton className="h-3 w-3 rounded-full absolute top-0 right-0" />
+              )}
+              {isLastCard && (
+                <Skeleton className="h-3 w-3 rounded-full absolute top-0 right-0" />
+              )}
+            </div>
+            <div className="space-y-1">
+              <Skeleton className="h-8 w-8 mx-auto" />
+              <Skeleton className="h-4 w-16 mx-auto" />
+            </div>
           </div>
-          <div className="space-y-1">
-            <Skeleton className="h-8 w-8 mx-auto" />
-            <Skeleton className="h-4 w-16 mx-auto" />
-          </div>
-        </div>
-      ))}
+        );
+      })}
     </div>
   );
 }

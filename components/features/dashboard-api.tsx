@@ -10,14 +10,7 @@ import { ApplicationCard } from "@/components/features/application-card";
 import { ApplicationForm } from "@/components/features/application-form";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
-import { SearchIcon, FilterIcon, LoaderIcon } from "lucide-react";
+import { SearchIcon, LoaderIcon } from "lucide-react";
 import { toast } from "sonner";
 import { ApplicationCardSkeleton, StatsOverviewSkeleton, SearchBarSkeleton } from "@/components/features/skeleton-components";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -385,29 +378,6 @@ export function Dashboard() {
               onChange={(e) => setSearchQuery(e.target.value)}
               className="pl-10"
             />
-          </div>
-
-          {/* Status Filter */}
-          <div className="w-full md:w-48">
-            <Select
-              value={statusFilter}
-              onValueChange={(value) =>
-                setStatusFilter(value as ApplicationStatus | "All")
-              }
-            >
-              <SelectTrigger>
-                <FilterIcon className="h-4 w-4 mr-2" />
-                <SelectValue placeholder="Filter by status" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="All">All Statuses</SelectItem>
-                <SelectItem value="Active">Active</SelectItem>
-                <SelectItem value="Interview">Interview</SelectItem>
-                <SelectItem value="Offer">Offer</SelectItem>
-                <SelectItem value="Rejected">Rejected</SelectItem>
-                <SelectItem value="Withdrawn">Withdrawn</SelectItem>
-              </SelectContent>
-            </Select>
           </div>
 
         </div>
