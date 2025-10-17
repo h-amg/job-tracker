@@ -28,6 +28,7 @@ import { useInfiniteScroll } from "@/hooks/use-infinite-scroll";
 export function Dashboard() {
   const [applications, setApplications] = useState<ApiApplication[]>([]);
   const [searchQuery, setSearchQuery] = useState("");
+  const [debouncedSearchQuery, setDebouncedSearchQuery] = useState("");
   const [statusFilter, setStatusFilter] = useState<ApplicationStatus | "All">("All");
   const [formOpen, setFormOpen] = useState(false);
   const [statusFormOpen, setStatusFormOpen] = useState(false);
@@ -48,6 +49,15 @@ export function Dashboard() {
   const { execute: updateStatus } = useApiCall<ApiApplication>();
   const { execute: archiveApplication } = useApiCall<ApiApplication>();
 
+  // Debounce search query - wait 500ms after user stops typing
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setDebouncedSearchQuery(searchQuery);
+    }, 500);
+
+    return () => clearTimeout(timer);
+  }, [searchQuery]);
+
   const loadApplications = useCallback(async (page: number = 1, append: boolean = false) => {
     if (append) {
       setLoadingMore(true);
@@ -59,7 +69,7 @@ export function Dashboard() {
     try {
       const response = await applicationApi.getApplications({
         status: statusFilter === "All" ? undefined : statusFilter,
-        search: searchQuery || undefined,
+        search: debouncedSearchQuery || undefined,
         includeArchived: false,
         page,
         limit: 10,
@@ -98,7 +108,7 @@ export function Dashboard() {
       setLoading(false);
       setLoadingMore(false);
     }
-  }, [statusFilter, searchQuery]);
+  }, [statusFilter, debouncedSearchQuery]);
 
   const loadMoreApplications = useCallback(() => {
     if (!loadingMore && hasNextPage) {
@@ -111,7 +121,7 @@ export function Dashboard() {
     setCurrentPage(1);
     setHasNextPage(true);
     loadApplications(1, false);
-  }, [statusFilter, searchQuery]);
+  }, [statusFilter, debouncedSearchQuery]);
 
   // Fetch applications on component mount
   useEffect(() => {
