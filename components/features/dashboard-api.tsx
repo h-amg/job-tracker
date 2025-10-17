@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useCallback } from "react";
 import { ApplicationStatus } from "@prisma/client";
-import { applicationApi, useApiCall, type ApiApplication } from "@/lib/api-client";
+import { applicationApi, useApiCall, type ApiApplication, type PaginationInfo } from "@/lib/api-client";
 import { type Application as AppData } from "@/lib/data/job-applications-data";
 import { StatsOverview } from "@/components/features/stats-overview";
 import { ReminderBanner } from "@/components/features/reminder-banner";
@@ -17,11 +17,11 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { PaginationComponent, ItemsPerPageSelector } from "@/components/ui/pagination";
 import { SearchIcon, FilterIcon, LoaderIcon } from "lucide-react";
 import { toast } from "sonner";
 import { ApplicationCardSkeleton, StatsOverviewSkeleton, SearchBarSkeleton } from "@/components/features/skeleton-components";
 import { Skeleton } from "@/components/ui/skeleton";
+import { useInfiniteScroll } from "@/hooks/use-infinite-scroll";
 
 // Type definitions for API responses (dates as strings from API)
 
@@ -36,9 +36,11 @@ export function Dashboard() {
   const [error, setError] = useState<string | null>(null);
   const [updatingApplications, setUpdatingApplications] = useState<Set<string>>(new Set());
   
-  // Client-side pagination state
+  // Infinite scroll state
   const [currentPage, setCurrentPage] = useState(1);
-  const [itemsPerPage, setItemsPerPage] = useState(4); // Fixed to 4 as requested
+  const [hasNextPage, setHasNextPage] = useState(true);
+  const [loadingMore, setLoadingMore] = useState(false);
+  const [paginationInfo, setPaginationInfo] = useState<PaginationInfo | null>(null);
 
   // API call hooks
   const { execute: fetchApplications } = useApiCall<ApiApplication[]>();
@@ -46,94 +48,92 @@ export function Dashboard() {
   const { execute: updateStatus } = useApiCall<ApiApplication>();
   const { execute: archiveApplication } = useApiCall<ApiApplication>();
 
-  const loadApplications = useCallback(async () => {
-    setLoading(true);
-    setError(null);
+  const loadApplications = useCallback(async (page: number = 1, append: boolean = false) => {
+    if (append) {
+      setLoadingMore(true);
+    } else {
+      setLoading(true);
+      setError(null);
+    }
     
     try {
-      await fetchApplications(async () => {
-        const response = await applicationApi.getApplications({
-          status: statusFilter === "All" ? undefined : statusFilter,
-          search: searchQuery || undefined,
-          includeArchived: false,
-        });
-        
-        if (response.success && response.data) {
-          setApplications(response.data as ApiApplication[]);
+      const response = await applicationApi.getApplications({
+        status: statusFilter === "All" ? undefined : statusFilter,
+        search: searchQuery || undefined,
+        includeArchived: false,
+        page,
+        limit: 10,
+      });
+      
+      if (response.success && response.data) {
+        const responseData = response as any; // Type assertion for the actual response structure
+        if (append) {
+          setApplications(prev => {
+            // Filter out duplicates by ID to prevent duplicate keys
+            const existingIds = new Set(prev.map(app => app.id));
+            const newApps = responseData.data.filter((app: any) => !existingIds.has(app.id));
+            
+            // Debug: Log if we're filtering out duplicates
+            if (newApps.length !== responseData.data.length) {
+              console.log(`Filtered out ${responseData.data.length - newApps.length} duplicate applications`);
+            }
+            
+            return [...prev, ...newApps];
+          });
         } else {
-          throw new Error(response.error || 'Failed to fetch applications');
+          setApplications(responseData.data);
         }
         
-        return response;
-      });
+        // Safely set pagination info from response
+        if (responseData.pagination) {
+          setPaginationInfo(responseData.pagination);
+          setHasNextPage(responseData.pagination.hasNextPage);
+        } else {
+          // Fallback if pagination data is missing
+          setPaginationInfo(null);
+          setHasNextPage(false);
+        }
+        setCurrentPage(page);
+      } else {
+        throw new Error(response.error || 'Failed to fetch applications');
+      }
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to load applications');
       toast.error('Failed to load applications');
     } finally {
       setLoading(false);
+      setLoadingMore(false);
     }
-  }, [fetchApplications, statusFilter, searchQuery]);
+  }, [statusFilter, searchQuery]);
+
+  const loadMoreApplications = useCallback(() => {
+    if (!loadingMore && hasNextPage) {
+      loadApplications(currentPage + 1, true);
+    }
+  }, [loadApplications, currentPage, loadingMore, hasNextPage]);
 
   // Reset to first page when filters change
   useEffect(() => {
     setCurrentPage(1);
-  }, [statusFilter, searchQuery, itemsPerPage]);
+    setHasNextPage(true);
+    loadApplications(1, false);
+  }, [statusFilter, searchQuery]);
 
   // Fetch applications on component mount
   useEffect(() => {
-    loadApplications();
-  }, [loadApplications]);
-
-  // Pagination handlers
-  const handlePageChange = useCallback((page: number) => {
-    console.log('Page change requested:', page, 'Current page before:', currentPage);
-    setCurrentPage(page);
-    console.log('setCurrentPage called with:', page);
-  }, [currentPage]);
-
-  const handleItemsPerPageChange = useCallback((newItemsPerPage: number) => {
-    setItemsPerPage(newItemsPerPage);
-    setCurrentPage(1); // Reset to first page when changing items per page
+    loadApplications(1, false);
   }, []);
 
-  // Client-side filtering and sorting
-  const filteredApplications = applications.filter((app) => {
-    // Exclude archived from main view
-    if (app.status === "Archived") return false;
-
-    // Search filter
-    const matchesSearch =
-      searchQuery === "" ||
-      app.company.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      app.role.toLowerCase().includes(searchQuery.toLowerCase());
-
-    // Status filter
-    const matchesStatus = statusFilter === "All" || app.status === statusFilter;
-
-    return matchesSearch && matchesStatus;
+  // Infinite scroll hook
+  const { elementRef } = useInfiniteScroll({
+    hasNextPage: hasNextPage && paginationInfo !== null,
+    isFetching: loadingMore,
+    fetchNextPage: loadMoreApplications,
+    threshold: 200,
   });
 
-  // Applications are already sorted by created date descending from the database
-  const displayedApplications = filteredApplications;
-
-  // Client-side pagination
-  const totalPages = Math.ceil(displayedApplications.length / itemsPerPage);
-  const startIndex = (currentPage - 1) * itemsPerPage;
-  const endIndex = startIndex + itemsPerPage;
-  const paginatedApplications = displayedApplications.slice(startIndex, endIndex);
-  
-  // Debug pagination calculations
-  console.log('Pagination Debug:', {
-    currentPage,
-    itemsPerPage,
-    totalApplications: applications.length,
-    filteredApplications: filteredApplications.length,
-    displayedApplications: displayedApplications.length,
-    totalPages,
-    startIndex,
-    endIndex,
-    paginatedApplicationsLength: paginatedApplications.length
-  });
+  // Applications are already filtered and sorted by the API
+  const displayedApplications = applications || [];
 
   const handleStatusUpdate = (id: string) => {
     setSelectedAppId(id);
@@ -239,10 +239,10 @@ export function Dashboard() {
     }
   };
 
-  const selectedApp = applications.find((app) => app.id === selectedAppId);
+  const selectedApp = applications?.find((app) => app.id === selectedAppId);
 
   // Convert API data to match existing component expectations
-  const convertedApplications: AppData[] = applications.map(app => ({
+  const convertedApplications: AppData[] = applications?.map(app => ({
     ...app,
     status: app.status as ApplicationStatus,
     resumeLink: app.resumeUrl || '',
@@ -252,7 +252,7 @@ export function Dashboard() {
     interviewDate: app.interviewDate ? new Date(app.interviewDate) : undefined,
     coverLetterLink: app.coverLetterUrl,
     jobType: app.jobType as "Full-time" | "Part-time" | "Contract" | "Internship" | undefined,
-  }));
+  })) || [];
 
   if (loading) {
     return (
@@ -363,12 +363,8 @@ export function Dashboard() {
         <div className="flex items-center justify-between mb-4">
           <div className="flex items-center gap-4">
             <h2 className="text-xl font-semibold">
-              Applications ({displayedApplications.length})
+              Applications ({paginationInfo?.totalCount || displayedApplications.length})
             </h2>
-            <ItemsPerPageSelector
-              value={itemsPerPage}
-              onChange={handleItemsPerPageChange}
-            />
           </div>
           <Button 
             onClick={() => setFormOpen(true)}
@@ -400,42 +396,45 @@ export function Dashboard() {
           </div>
         ) : (
           <>
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 mb-6">
-              {paginatedApplications.map((app) => {
-                const convertedApp: AppData = {
-                  ...app,
-                  status: app.status as ApplicationStatus,
-                  resumeLink: app.resumeUrl || '',
-                  deadline: new Date(app.deadline),
-                  createdAt: new Date(app.createdAt),
-                  updatedAt: new Date(app.updatedAt),
-                  interviewDate: app.interviewDate ? new Date(app.interviewDate) : undefined,
-                  coverLetterLink: app.coverLetterUrl,
-                  jobType: app.jobType as "Full-time" | "Part-time" | "Contract" | "Internship" | undefined,
-                };
-                return (
-                  <ApplicationCard
-                    key={app.id}
-                    application={convertedApp}
-                    onStatusUpdate={handleStatusUpdate}
-                    onArchive={handleArchiveApplication}
-                    isUpdating={updatingApplications.has(app.id)}
-                  />
-                );
-              })}
+            <div className="max-h-[800px] overflow-y-auto mb-6">
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+                {displayedApplications.map((app) => {
+                  const convertedApp: AppData = {
+                    ...app,
+                    status: app.status as ApplicationStatus,
+                    resumeLink: app.resumeUrl || '',
+                    deadline: new Date(app.deadline),
+                    createdAt: new Date(app.createdAt),
+                    updatedAt: new Date(app.updatedAt),
+                    interviewDate: app.interviewDate ? new Date(app.interviewDate) : undefined,
+                    coverLetterLink: app.coverLetterUrl,
+                    jobType: app.jobType as "Full-time" | "Part-time" | "Contract" | "Internship" | undefined,
+                  };
+                  return (
+                    <ApplicationCard
+                      key={`${app.id}-${app.updatedAt}`}
+                      application={convertedApp}
+                      onStatusUpdate={handleStatusUpdate}
+                      onArchive={handleArchiveApplication}
+                      isUpdating={updatingApplications.has(app.id)}
+                    />
+                  );
+                })}
+              </div>
             </div>
             
-            {/* Pagination Controls */}
-            {totalPages > 1 && (
-              <div className="flex justify-center">
-                <PaginationComponent
-                  currentPage={currentPage}
-                  totalPages={totalPages}
-                  onPageChange={handlePageChange}
-                  className="mt-6"
-                />
+            {/* Infinite Scroll Loading Indicator */}
+            {loadingMore && (
+              <div className="flex justify-center py-8">
+                <div className="flex items-center gap-2 text-muted-foreground">
+                  <LoaderIcon className="h-4 w-4 animate-spin" />
+                  <span>Loading more applications...</span>
+                </div>
               </div>
             )}
+            
+            {/* Infinite Scroll Trigger */}
+            <div ref={elementRef} className="h-4" />
           </>
         )}
       </div>

@@ -4,7 +4,7 @@ import { TemporalClient } from '@/lib/temporal-client'
 import { ApplicationStatus } from '@prisma/client'
 import { z } from 'zod'
 
-// GET /api/applications - Fetch all applications with optional filtering
+// GET /api/applications - Fetch applications with pagination and optional filtering
 export async function GET(request: NextRequest) {
   try {
     const { searchParams } = new URL(request.url)
@@ -12,16 +12,28 @@ export async function GET(request: NextRequest) {
     const status = searchParams.get('status')
     const search = searchParams.get('search')
     const includeArchived = searchParams.get('includeArchived') === 'true'
+    const page = parseInt(searchParams.get('page') || '1')
+    const limit = parseInt(searchParams.get('limit') || '10')
 
-    const applications = await ApplicationService.getApplications({
+    const result = await ApplicationService.getApplications({
       status: status as ApplicationStatus | undefined,
       search: search || undefined,
       includeArchived,
+      page,
+      limit,
     })
 
     return NextResponse.json({
       success: true,
-      data: applications,
+      data: result.applications,
+      pagination: {
+        page: result.page,
+        limit: result.limit,
+        totalCount: result.totalCount,
+        totalPages: result.totalPages,
+        hasNextPage: result.hasNextPage,
+        hasPreviousPage: result.hasPreviousPage,
+      },
     })
   } catch (error) {
     console.error('Error fetching applications:', error)

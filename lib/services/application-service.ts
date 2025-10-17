@@ -79,6 +79,8 @@ export class ApplicationService {
     status?: ApplicationStatus
     search?: string
     includeArchived?: boolean
+    page?: number
+    limit?: number
   }) {
     const where: Record<string, unknown> = {}
 
@@ -97,7 +99,16 @@ export class ApplicationService {
       ]
     }
 
-    return await prisma.application.findMany({
+    const page = filters?.page || 1
+    const limit = filters?.limit || 10
+    const skip = (page - 1) * limit
+
+    // Get total count for pagination metadata
+    const totalCount = await prisma.application.count({ where })
+    const totalPages = Math.ceil(totalCount / limit)
+
+    // Get paginated applications
+    const applications = await prisma.application.findMany({
       where,
       include: {
         timelineEvents: {
@@ -110,7 +121,19 @@ export class ApplicationService {
         },
       },
       orderBy: { createdAt: 'desc' }, // Always order by created date descending (newest first)
+      skip,
+      take: limit,
     })
+
+    return {
+      applications,
+      page,
+      limit,
+      totalCount,
+      totalPages,
+      hasNextPage: page < totalPages,
+      hasPreviousPage: page > 1,
+    }
   }
 
   static async getApplicationById(id: string) {

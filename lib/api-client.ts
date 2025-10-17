@@ -163,7 +163,7 @@ export interface PaginatedApiResponse<T> extends ApiResponse<T> {
 
 // Application API methods
 export const applicationApi = {
-  // Get all applications with pagination
+  // Get applications with pagination
   getApplications: (filters?: {
     status?: string
     search?: string

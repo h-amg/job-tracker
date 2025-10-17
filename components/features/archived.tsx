@@ -1,60 +1,118 @@
 "use client";
 
-import { useEffect, useState } from "react";
-import { applicationApi } from "@/lib/api-client";
+import { useEffect, useState, useCallback } from "react";
+import { applicationApi, type ApiApplication, type PaginationInfo } from "@/lib/api-client";
 import { ApplicationCard } from "@/components/features/application-card";
 import { type Application } from "@/lib/data/job-applications-data";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { ArchiveIcon, SearchIcon } from "lucide-react";
+import { ArchiveIcon, SearchIcon, LoaderIcon } from "lucide-react";
 import { ApplicationCardSkeleton, SearchBarSkeleton } from "@/components/features/skeleton-components";
+import { useInfiniteScroll } from "@/hooks/use-infinite-scroll";
+import { toast } from "sonner";
 
 export function Archived() {
   const [searchQuery, setSearchQuery] = useState("");
   const [applications, setApplications] = useState<Application[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  
+  // Infinite scroll state
+  const [currentPage, setCurrentPage] = useState(1);
+  const [hasNextPage, setHasNextPage] = useState(true);
+  const [loadingMore, setLoadingMore] = useState(false);
+  const [paginationInfo, setPaginationInfo] = useState<PaginationInfo | null>(null);
 
-  useEffect(() => {
-    const load = async () => {
+  const loadArchivedApplications = useCallback(async (page: number = 1, append: boolean = false) => {
+    if (append) {
+      setLoadingMore(true);
+    } else {
       setLoading(true);
       setError(null);
-      try {
-        const res = await applicationApi.getApplications({ includeArchived: true });
-        if (res.success && res.data) {
-          const archivedOnly = res.data.filter((a) => a.status === "Archived");
-          const converted = archivedOnly.map((a) => ({
-            ...a,
-            resumeLink: a.resumeUrl,
-            deadline: new Date(a.deadline),
-            createdAt: new Date(a.createdAt),
-            updatedAt: new Date(a.updatedAt),
-            interviewDate: a.interviewDate ? new Date(a.interviewDate) : undefined,
-          })) as Application[];
-          setApplications(converted);
+    }
+    
+    try {
+      const response = await applicationApi.getApplications({
+        includeArchived: true,
+        search: searchQuery || undefined,
+        page,
+        limit: 10,
+      });
+      
+      if (response.success && response.data) {
+        const responseData = response as any; // Type assertion for the actual response structure
+        // Filter to only archived applications
+        const archivedOnly = responseData.data.filter((a: any) => a.status === "Archived");
+        const converted = archivedOnly.map((a: any) => ({
+          ...a,
+          resumeLink: a.resumeUrl,
+          deadline: new Date(a.deadline),
+          createdAt: new Date(a.createdAt),
+          updatedAt: new Date(a.updatedAt),
+          interviewDate: a.interviewDate ? new Date(a.interviewDate) : undefined,
+        })) as Application[];
+        
+        if (append) {
+          setApplications(prev => {
+            // Filter out duplicates by ID to prevent duplicate keys
+            const existingIds = new Set(prev.map(app => app.id));
+            const newApps = converted.filter(app => !existingIds.has(app.id));
+            return [...prev, ...newApps];
+          });
         } else {
-          throw new Error(res.error || "Failed to fetch archived applications");
+          setApplications(converted);
         }
-      } catch (e) {
-        setError(e instanceof Error ? e.message : "Failed to load archived applications");
-      } finally {
-        setLoading(false);
+        
+        // Safely set pagination info from response
+        if (responseData.pagination) {
+          setPaginationInfo(responseData.pagination);
+          setHasNextPage(responseData.pagination.hasNextPage);
+        } else {
+          // Fallback if pagination data is missing
+          setPaginationInfo(null);
+          setHasNextPage(false);
+        }
+        setCurrentPage(page);
+      } else {
+        throw new Error(response.error || "Failed to fetch archived applications");
       }
-    };
-    load();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Failed to load archived applications");
+      toast.error("Failed to load archived applications");
+    } finally {
+      setLoading(false);
+      setLoadingMore(false);
+    }
+  }, [searchQuery]);
+
+  const loadMoreApplications = useCallback(() => {
+    if (!loadingMore && hasNextPage) {
+      loadArchivedApplications(currentPage + 1, true);
+    }
+  }, [loadArchivedApplications, currentPage, loadingMore, hasNextPage]);
+
+  // Reset to first page when search changes
+  useEffect(() => {
+    setCurrentPage(1);
+    setHasNextPage(true);
+    loadArchivedApplications(1, false);
+  }, [searchQuery]);
+
+  // Fetch applications on component mount
+  useEffect(() => {
+    loadArchivedApplications(1, false);
   }, []);
 
-  // Filter archived applications
-  const archivedApplications = applications;
-
-  // Apply search
-  const filteredApplications = archivedApplications.filter((app) => {
-    if (searchQuery === "") return true;
-    return (
-      app.company.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      app.role.toLowerCase().includes(searchQuery.toLowerCase())
-    );
+  // Infinite scroll hook
+  const { elementRef } = useInfiniteScroll({
+    hasNextPage: hasNextPage && paginationInfo !== null,
+    isFetching: loadingMore,
+    fetchNextPage: loadMoreApplications,
+    threshold: 200,
   });
+
+  // Applications are already filtered and sorted by the API
+  const displayedApplications = applications || [];
 
   if (loading) {
     return (
@@ -112,24 +170,22 @@ export function Archived() {
       </div>
 
       {/* Search */}
-      {archivedApplications.length > 0 && (
-        <div className="bg-card border border-border rounded-lg p-4">
-          <div className="relative">
-            <SearchIcon className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+      <div className="bg-card border border-border rounded-lg p-4">
+        <div className="relative">
+          <SearchIcon className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
 
-            <Input
-              placeholder="Search archived applications..."
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              className="pl-10"
-            />
-          </div>
+          <Input
+            placeholder="Search archived applications..."
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            className="pl-10"
+          />
         </div>
-      )}
+      </div>
 
       {/* Applications List */}
       <div>
-        {archivedApplications.length === 0 ? (
+        {displayedApplications.length === 0 && !loading ? (
           <div className="text-center py-12 bg-card border border-border rounded-lg">
             <ArchiveIcon className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
 
@@ -141,29 +197,38 @@ export function Archived() {
               expires
             </p>
           </div>
-        ) : filteredApplications.length === 0 ? (
-          <div className="text-center py-12 bg-card border border-border rounded-lg">
-            <p className="text-muted-foreground">
-              No archived applications match your search
-            </p>
-          </div>
         ) : (
           <>
             <div className="flex items-center justify-between mb-4">
               <h2 className="text-xl font-semibold">
-                {filteredApplications.length} Archived Application
-                {filteredApplications.length !== 1 ? "s" : ""}
+                {paginationInfo?.totalCount || displayedApplications.length} Archived Application
+                {(paginationInfo?.totalCount || displayedApplications.length) !== 1 ? "s" : ""}
               </h2>
             </div>
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-              {filteredApplications.map((app) => (
-                <ApplicationCard
-                  key={app.id}
-                  application={app}
-                  showActions={false}
-                />
-              ))}
+            <div className="max-h-[800px] overflow-y-auto">
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+                {displayedApplications.map((app) => (
+                  <ApplicationCard
+                    key={`${app.id}-${app.updatedAt}`}
+                    application={app}
+                    showActions={false}
+                  />
+                ))}
+              </div>
             </div>
+            
+            {/* Infinite Scroll Loading Indicator */}
+            {loadingMore && (
+              <div className="flex justify-center py-8">
+                <div className="flex items-center gap-2 text-muted-foreground">
+                  <LoaderIcon className="h-4 w-4 animate-spin" />
+                  <span>Loading more archived applications...</span>
+                </div>
+              </div>
+            )}
+            
+            {/* Infinite Scroll Trigger */}
+            <div ref={elementRef} className="h-4" />
           </>
         )}
       </div>
