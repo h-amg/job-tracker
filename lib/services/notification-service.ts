@@ -14,7 +14,7 @@ export type CreateNotificationInput = z.infer<typeof CreateNotificationSchema>
 
 export class NotificationService {
   static async createNotification(data: CreateNotificationInput) {
-    return await prisma.notification.create({
+    const notification = await prisma.notification.create({
       data: {
         ...data,
         status: data.status || NotificationStatus.Pending,
@@ -28,6 +28,20 @@ export class NotificationService {
           },
         },
       },
+    })
+
+    // Broadcast to SSE clients
+    this.broadcastNotification(notification)
+
+    return notification
+  }
+
+  private static broadcastNotification(notification: any) {
+    // Import the broadcast function dynamically to avoid circular imports
+    import('@/app/api/notifications/stream/route').then(({ broadcastNotification }) => {
+      broadcastNotification(notification)
+    }).catch(() => {
+      // Ignore errors if SSE module is not available
     })
   }
 
@@ -166,6 +180,24 @@ export class NotificationService {
       title: 'Status Updated',
       message: `Application status changed to ${newStatus}`,
       status: NotificationStatus.Completed,
+    })
+  }
+
+  static async deleteNotification(notificationId: string) {
+    return await prisma.notification.delete({
+      where: { id: notificationId },
+    })
+  }
+
+  static async deleteAllNotifications(applicationId?: string) {
+    const where: Record<string, unknown> = {}
+
+    if (applicationId) {
+      where.applicationId = applicationId
+    }
+
+    return await prisma.notification.deleteMany({
+      where,
     })
   }
 

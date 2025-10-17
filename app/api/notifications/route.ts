@@ -75,3 +75,52 @@ export async function PUT(request: NextRequest) {
     )
   }
 }
+
+// DELETE /api/notifications/[id] - Delete individual notification
+export async function DELETE(request: NextRequest) {
+  try {
+    const { searchParams } = new URL(request.url)
+    const notificationId = searchParams.get('id')
+    const deleteAll = searchParams.get('deleteAll') === 'true'
+    const applicationId = searchParams.get('applicationId')
+    
+    if (deleteAll) {
+      // Delete all notifications (optionally filtered by applicationId)
+      const result = await NotificationService.deleteAllNotifications(applicationId || undefined)
+      
+      return NextResponse.json({
+        success: true,
+        data: { count: result.count },
+        message: `Deleted ${result.count} notifications`,
+      })
+    }
+    
+    if (!notificationId) {
+      return NextResponse.json(
+        {
+          success: false,
+          error: 'Notification ID is required',
+        },
+        { status: 400 }
+      )
+    }
+
+    await NotificationService.deleteNotification(notificationId)
+
+    return NextResponse.json({
+      success: true,
+      message: 'Notification deleted',
+    })
+  } catch (error) {
+    console.error('Error deleting notification:', error)
+    
+    return NextResponse.json(
+      {
+        success: false,
+        error: 'Failed to delete notification',
+        message: error instanceof Error ? error.message : 'Unknown error',
+      },
+      { status: 500 }
+    )
+  }
+}

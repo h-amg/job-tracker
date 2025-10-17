@@ -19,35 +19,41 @@ import {
 import { Badge } from "@/components/ui/badge";
 
 export type NotificationType =
-  | "cover-letter"
-  | "deadline-reminder"
-  | "interview-reminder"
-  | "success"
-  | "warning";
+  | "DeadlineReminder"
+  | "InterviewReminder"
+  | "CoverLetterGenerated"
+  | "StatusUpdate";
 
-export type NotificationStatus = "pending" | "completed" | "failed";
+export type NotificationStatus = "Pending" | "Completed" | "Failed";
 
 export interface Notification {
   id: string;
+  applicationId: string;
   type: NotificationType;
   title: string;
   message: string;
   status: NotificationStatus;
-  timestamp: Date;
-  applicationId?: string;
-  applicationTitle?: string;
+  timestamp: string;
+  read: boolean;
+  application?: {
+    id: string;
+    company: string;
+    role: string;
+  };
 }
 
 interface NotificationCenterProps {
   notifications?: Notification[];
   onDismiss?: (id: string) => void;
   onViewApplication?: (applicationId: string) => void;
+  onClearAll?: () => void;
 }
 
 export function NotificationCenter({
   notifications = [],
   onDismiss,
   onViewApplication,
+  onClearAll,
 }: NotificationCenterProps) {
   const [open, setOpen] = useState(false);
   const [localNotifications, setLocalNotifications] =
@@ -58,9 +64,9 @@ export function NotificationCenter({
   }, [notifications]);
 
   const pendingCount = localNotifications.filter(
-    (n) => n.status === "pending"
+    (n) => n.status === "Pending"
   ).length;
-  const unreadCount = localNotifications.length;
+  const unreadCount = localNotifications.filter(n => !n.read).length;
 
   const handleDismiss = (id: string) => {
     setLocalNotifications((prev) => prev.filter((n) => n.id !== id));
@@ -71,29 +77,29 @@ export function NotificationCenter({
     type: NotificationType,
     status: NotificationStatus
   ) => {
-    if (status === "pending") {
+    if (status === "Pending") {
       return (
         <LoaderIcon className="h-4 w-4 animate-spin text-blue-600 dark:text-blue-400" />
       );
     }
-    if (status === "completed") {
+    if (status === "Completed") {
       return (
         <CheckCircleIcon className="h-4 w-4 text-green-600 dark:text-green-400" />
       );
     }
 
     switch (type) {
-      case "cover-letter":
+      case "CoverLetterGenerated":
         return (
           <FileTextIcon className="h-4 w-4 text-blue-600 dark:text-blue-400" />
         );
 
-      case "deadline-reminder":
+      case "DeadlineReminder":
         return (
           <AlertCircleIcon className="h-4 w-4 text-yellow-600 dark:text-yellow-400" />
         );
 
-      case "interview-reminder":
+      case "InterviewReminder":
         return (
           <CalendarIcon className="h-4 w-4 text-purple-600 dark:text-purple-400" />
         );
@@ -105,14 +111,14 @@ export function NotificationCenter({
 
   const getStatusBadge = (status: NotificationStatus) => {
     switch (status) {
-      case "pending":
+      case "Pending":
         return (
           <Badge variant="secondary" className="text-xs">
             In Progress
           </Badge>
         );
 
-      case "completed":
+      case "Completed":
         return (
           <Badge
             variant="default"
@@ -122,7 +128,7 @@ export function NotificationCenter({
           </Badge>
         );
 
-      case "failed":
+      case "Failed":
         return (
           <Badge variant="destructive" className="text-xs">
             Failed
@@ -131,7 +137,8 @@ export function NotificationCenter({
     }
   };
 
-  const formatTimestamp = (date: Date) => {
+  const formatTimestamp = (timestamp: string) => {
+    const date = new Date(timestamp);
     const now = new Date();
     const diff = now.getTime() - date.getTime();
     const minutes = Math.floor(diff / 60000);
@@ -172,8 +179,7 @@ export function NotificationCenter({
               variant="ghost"
               size="sm"
               onClick={() => {
-                setLocalNotifications([]);
-                localNotifications.forEach((n) => onDismiss?.(n.id));
+                onClearAll?.();
               }}
               className="text-xs"
             >
@@ -225,10 +231,10 @@ export function NotificationCenter({
                       <p className="text-xs text-muted-foreground mb-2">
                         {notification.message}
                       </p>
-                      {notification.applicationTitle && (
+                      {notification.application && (
                         <p className="text-xs text-muted-foreground mb-2">
                           <span className="font-medium">
-                            {notification.applicationTitle}
+                            {notification.application.role} at {notification.application.company}
                           </span>
                         </p>
                       )}
@@ -239,7 +245,7 @@ export function NotificationCenter({
                         <div className="flex items-center gap-2">
                           {getStatusBadge(notification.status)}
                           {notification.applicationId &&
-                            notification.status === "completed" &&
+                            notification.status === "Completed" &&
                             onViewApplication && (
                               <Button
                                 variant="ghost"
@@ -247,7 +253,7 @@ export function NotificationCenter({
                                 className="h-6 text-xs px-2"
                                 onClick={() => {
                                   onViewApplication(
-                                    notification.applicationId!
+                                    notification.applicationId
                                   );
                                   setOpen(false);
                                 }}

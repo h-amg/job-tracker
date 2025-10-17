@@ -206,11 +206,21 @@ export const notificationApi = {
     apiClient.get('/api/notifications', { applicationId, unreadOnly }),
 
   // Mark notification as read
-  markAsRead: (id: string) => apiClient.put(`/api/notifications/${id}/read`),
+  markAsRead: (id: string) => apiClient.put(`/api/notifications?id=${id}`),
 
   // Mark all notifications as read
   markAllAsRead: (applicationId?: string) =>
-    apiClient.put('/api/notifications/read-all', { applicationId }),
+    apiClient.put('/api/notifications', { applicationId }),
+
+  // Delete individual notification
+  deleteNotification: (id: string) => apiClient.delete(`/api/notifications?id=${id}`),
+
+  // Delete all notifications
+  deleteAllNotifications: (applicationId?: string) =>
+    apiClient.delete(`/api/notifications?deleteAll=true${applicationId ? `&applicationId=${applicationId}` : ''}`),
+
+  // Alias for dismiss notification (now deletes instead of marks as read)
+  dismissNotification: (id: string) => apiClient.delete(`/api/notifications?id=${id}`),
 }
 
 // Upload API methods

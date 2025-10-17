@@ -15,7 +15,7 @@ import {
   NotificationCenter,
   type Notification,
 } from "@/components/features/notification-center";
-import { generateMockNotifications } from "@/lib/data/notifications-data";
+import { useNotificationStream } from "@/hooks/use-notification-stream";
 
 interface HeaderProps {
   onAddApplication?: () => void;
@@ -24,18 +24,31 @@ interface HeaderProps {
 export function Header({ onAddApplication }: HeaderProps) {
   const pathname = usePathname();
   const router = useRouter();
-  const [notifications, setNotifications] = useState<Notification[]>([]);
+  
+  // Use the notification stream hook
+  const {
+    notifications,
+    isConnected,
+    error,
+    markAsRead,
+    dismissNotification,
+    deleteAllNotifications,
+  } = useNotificationStream();
 
-  // Load notifications on mount
-  useEffect(() => {
-    setNotifications(generateMockNotifications());
-  }, []);
-
-  const handleDismissNotification = (id: string) => {
-    setNotifications((prev) => prev.filter((n) => n.id !== id));
+  const handleDismissNotification = async (id: string) => {
+    await dismissNotification(id);
   };
 
-  const handleViewApplication = (applicationId: string) => {
+  const handleClearAllNotifications = async () => {
+    await deleteAllNotifications();
+  };
+
+  const handleViewApplication = async (applicationId: string) => {
+    // Mark notification as read when viewing application
+    const notification = notifications.find(n => n.applicationId === applicationId);
+    if (notification) {
+      await markAsRead(notification.id);
+    }
     router.push(`/application/${applicationId}`);
   };
 
@@ -102,6 +115,7 @@ export function Header({ onAddApplication }: HeaderProps) {
               notifications={notifications}
               onDismiss={handleDismissNotification}
               onViewApplication={handleViewApplication}
+              onClearAll={handleClearAllNotifications}
             />
 
             <Button variant="ghost" size="sm" className="h-9 w-9 p-0">
