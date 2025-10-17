@@ -245,48 +245,50 @@ export function Archived() {
                 {(paginationInfo?.totalCount || displayedApplications.length) !== 1 ? "s" : ""}
               </h2>
             </div>
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-              {displayedApplications.map((app) => (
-                <ApplicationCard
-                  key={`${app.id}-${app.updatedAt}`}
-                  application={app}
-                  showActions={false}
-                />
-              ))}
+            <div className="max-h-[600px] overflow-y-auto">
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+                {displayedApplications.map((app) => (
+                  <ApplicationCard
+                    key={`${app.id}-${app.updatedAt}`}
+                    application={app}
+                    showActions={true}
+                  />
+                ))}
+              </div>
+              
+              {/* Infinite Scroll Loading Indicator */}
+              {loadingMore && (
+                <div className="flex justify-center py-8">
+                  <div className="flex items-center gap-2 text-muted-foreground">
+                    <LoaderIcon className="h-4 w-4 animate-spin" />
+                    <span>Loading more archived applications...</span>
+                  </div>
+                </div>
+              )}
+              
+              {/* Infinite Scroll Trigger - Only show if there are more pages */}
+              {hasNextPage && (
+                <div ref={elementRef} className="h-20 flex items-center justify-center">
+                  <div className="text-muted-foreground text-sm">
+                    Scroll to load more applications
+                  </div>
+                </div>
+              )}
+              
+              {/* Fallback Load More Button */}
+              {hasNextPage && !loadingMore && (
+                <div className="flex justify-center py-8">
+                  <Button 
+                    onClick={loadMoreApplications}
+                    variant="outline"
+                    className="gap-2"
+                  >
+                    <LoaderIcon className="h-4 w-4" />
+                    Load More Applications
+                  </Button>
+                </div>
+              )}
             </div>
-            
-            {/* Infinite Scroll Loading Indicator */}
-            {loadingMore && (
-              <div className="flex justify-center py-8">
-                <div className="flex items-center gap-2 text-muted-foreground">
-                  <LoaderIcon className="h-4 w-4 animate-spin" />
-                  <span>Loading more archived applications...</span>
-                </div>
-              </div>
-            )}
-            
-            {/* Infinite Scroll Trigger - Only show if there are more pages */}
-            {hasNextPage && (
-              <div ref={elementRef} className="h-20 flex items-center justify-center">
-                <div className="text-muted-foreground text-sm">
-                  Scroll to load more applications
-                </div>
-              </div>
-            )}
-            
-            {/* Fallback Load More Button */}
-            {hasNextPage && !loadingMore && (
-              <div className="flex justify-center py-8">
-                <Button 
-                  onClick={loadMoreApplications}
-                  variant="outline"
-                  className="gap-2"
-                >
-                  <LoaderIcon className="h-4 w-4" />
-                  Load More Applications
-                </Button>
-              </div>
-            )}
           </>
         )}
       </div>
