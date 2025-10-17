@@ -165,7 +165,7 @@ export interface PaginatedApiResponse<T> extends ApiResponse<T> {
 export const applicationApi = {
   // Get applications with pagination
   getApplications: (filters?: {
-    status?: string
+    status?: ApplicationStatus
     search?: string
     includeArchived?: boolean
     page?: number
@@ -279,3 +279,4 @@ export const useApiCall = <T>() => {
 
 // Import useState for the hook
 import { useState, useCallback } from 'react'
+import { ApplicationStatus } from '@prisma/client'

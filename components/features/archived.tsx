@@ -1,18 +1,32 @@
 "use client";
 
 import { useEffect, useState, useCallback } from "react";
-import { applicationApi, type ApiApplication, type PaginationInfo } from "@/lib/api-client";
+import { applicationApi, type PaginationInfo } from "@/lib/api-client";
 import { ApplicationCard } from "@/components/features/application-card";
 import { type Application } from "@/lib/data/job-applications-data";
+import { ApplicationStatus } from "@prisma/client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { ArchiveIcon, SearchIcon, LoaderIcon } from "lucide-react";
-import { ApplicationCardSkeleton, SearchBarSkeleton } from "@/components/features/skeleton-components";
+import { ApplicationCardSkeleton } from "@/components/features/skeleton-components";
 import { useInfiniteScroll } from "@/hooks/use-infinite-scroll";
 import { toast } from "sonner";
 
+// Type for API application data
+interface ApiApplicationData {
+  id: string;
+  status: string;
+  resumeUrl?: string;
+  deadline: string;
+  createdAt: string;
+  updatedAt: string;
+  interviewDate?: string;
+  [key: string]: unknown;
+}
+
 export function Archived() {
   const [searchQuery, setSearchQuery] = useState("");
+  const [debouncedSearchQuery, setDebouncedSearchQuery] = useState("");
   const [applications, setApplications] = useState<Application[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -22,6 +36,15 @@ export function Archived() {
   const [hasNextPage, setHasNextPage] = useState(true);
   const [loadingMore, setLoadingMore] = useState(false);
   const [paginationInfo, setPaginationInfo] = useState<PaginationInfo | null>(null);
+
+  // Debounce search query - wait 500ms after user stops typing
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setDebouncedSearchQuery(searchQuery);
+    }, 500);
+
+    return () => clearTimeout(timer);
+  }, [searchQuery]);
 
   const loadArchivedApplications = useCallback(async (page: number = 1, append: boolean = false) => {
     if (append) {
@@ -33,23 +56,22 @@ export function Archived() {
     
     try {
       const response = await applicationApi.getApplications({
-        includeArchived: true,
-        search: searchQuery || undefined,
+        status: ApplicationStatus.Archived,
+        search: debouncedSearchQuery || undefined,
         page,
         limit: 10,
       });
       
       if (response.success && response.data) {
-        const responseData = response as any; // Type assertion for the actual response structure
-        // Filter to only archived applications
-        const archivedOnly = responseData.data.filter((a: any) => a.status === "Archived");
-        const converted = archivedOnly.map((a: any) => ({
-          ...a,
-          resumeLink: a.resumeUrl,
-          deadline: new Date(a.deadline),
-          createdAt: new Date(a.createdAt),
-          updatedAt: new Date(a.updatedAt),
-          interviewDate: a.interviewDate ? new Date(a.interviewDate) : undefined,
+        const responseData = response as { data: unknown[]; pagination?: PaginationInfo };
+        // No need to filter since API returns only archived applications
+        const converted = responseData.data.map((a) => ({
+          ...(a as ApiApplicationData),
+          resumeLink: (a as ApiApplicationData).resumeUrl,
+          deadline: new Date((a as ApiApplicationData).deadline),
+          createdAt: new Date((a as ApiApplicationData).createdAt),
+          updatedAt: new Date((a as ApiApplicationData).updatedAt),
+          interviewDate: (a as ApiApplicationData).interviewDate ? new Date((a as ApiApplicationData).interviewDate!) : undefined,
         })) as Application[];
         
         if (append) {
@@ -83,7 +105,7 @@ export function Archived() {
       setLoading(false);
       setLoadingMore(false);
     }
-  }, [searchQuery]);
+  }, [debouncedSearchQuery]);
 
   const loadMoreApplications = useCallback(() => {
     if (!loadingMore && hasNextPage) {
@@ -96,7 +118,7 @@ export function Archived() {
     setCurrentPage(1);
     setHasNextPage(true);
     loadArchivedApplications(1, false);
-  }, [searchQuery]);
+  }, [debouncedSearchQuery]);
 
   // Fetch applications on component mount
   useEffect(() => {
@@ -105,7 +127,7 @@ export function Archived() {
 
   // Infinite scroll hook
   const { elementRef } = useInfiniteScroll({
-    hasNextPage: hasNextPage && paginationInfo !== null,
+    hasNextPage: hasNextPage,
     isFetching: loadingMore,
     fetchNextPage: loadMoreApplications,
     threshold: 200,
@@ -129,15 +151,17 @@ export function Archived() {
         </div>
 
         {/* Search Skeleton */}
-        <SearchBarSkeleton />
+        <div className="bg-card border border-border rounded-lg p-4">
+          <div className="h-10 bg-muted animate-pulse rounded-md" />
+        </div>
 
         {/* Applications List Skeleton */}
         <div>
           <div className="flex items-center justify-between mb-4">
-            <h2 className="text-xl font-semibold">Loading...</h2>
+            <div className="h-6 w-48 bg-muted animate-pulse rounded" />
           </div>
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-            {Array.from({ length: 4 }).map((_, index) => (
+            {Array.from({ length: 6 }).map((_, index) => (
               <ApplicationCardSkeleton key={index} />
             ))}
           </div>
@@ -148,9 +172,25 @@ export function Archived() {
 
   if (error) {
     return (
-      <div className="text-center py-12">
-        <p className="text-red-500 mb-4">{error}</p>
-        <Button onClick={() => location.reload()}>Retry</Button>
+      <div className="space-y-8">
+        {/* Page Header */}
+        <div>
+          <div className="flex items-center gap-3 mb-2">
+            <ArchiveIcon className="h-8 w-8 text-muted-foreground" />
+            <h1 className="text-3xl font-bold">Archived Applications</h1>
+          </div>
+          <p className="text-muted-foreground">
+            Applications that have been automatically archived or manually closed
+          </p>
+        </div>
+
+        {/* Error State */}
+        <div className="text-center py-12 bg-card border border-border rounded-lg">
+          <p className="text-red-500 mb-4">{error}</p>
+          <Button onClick={() => loadArchivedApplications(1, false)}>
+            Try Again
+          </Button>
+        </div>
       </div>
     );
   }
@@ -173,7 +213,6 @@ export function Archived() {
       <div className="bg-card border border-border rounded-lg p-4">
         <div className="relative">
           <SearchIcon className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-
           <Input
             placeholder="Search archived applications..."
             value={searchQuery}
@@ -193,8 +232,9 @@ export function Archived() {
               No Archived Applications
             </h3>
             <p className="text-muted-foreground mb-4">
-              Applications are automatically archived after the grace period
-              expires
+              {searchQuery
+                ? "No applications match your search"
+                : "Applications are automatically archived after the grace period expires"}
             </p>
           </div>
         ) : (
@@ -205,16 +245,14 @@ export function Archived() {
                 {(paginationInfo?.totalCount || displayedApplications.length) !== 1 ? "s" : ""}
               </h2>
             </div>
-            <div className="max-h-[800px] overflow-y-auto">
-              <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-                {displayedApplications.map((app) => (
-                  <ApplicationCard
-                    key={`${app.id}-${app.updatedAt}`}
-                    application={app}
-                    showActions={false}
-                  />
-                ))}
-              </div>
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+              {displayedApplications.map((app) => (
+                <ApplicationCard
+                  key={`${app.id}-${app.updatedAt}`}
+                  application={app}
+                  showActions={false}
+                />
+              ))}
             </div>
             
             {/* Infinite Scroll Loading Indicator */}
@@ -227,8 +265,28 @@ export function Archived() {
               </div>
             )}
             
-            {/* Infinite Scroll Trigger */}
-            <div ref={elementRef} className="h-4" />
+            {/* Infinite Scroll Trigger - Only show if there are more pages */}
+            {hasNextPage && (
+              <div ref={elementRef} className="h-20 flex items-center justify-center">
+                <div className="text-muted-foreground text-sm">
+                  Scroll to load more applications
+                </div>
+              </div>
+            )}
+            
+            {/* Fallback Load More Button */}
+            {hasNextPage && !loadingMore && (
+              <div className="flex justify-center py-8">
+                <Button 
+                  onClick={loadMoreApplications}
+                  variant="outline"
+                  className="gap-2"
+                >
+                  <LoaderIcon className="h-4 w-4" />
+                  Load More Applications
+                </Button>
+              </div>
+            )}
           </>
         )}
       </div>
