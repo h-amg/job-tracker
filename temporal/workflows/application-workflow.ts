@@ -41,18 +41,21 @@ export interface WorkflowState {
 }
 
 // Main workflow function
-export async function ApplicationWorkflow(applicationId: string, deadline: Date): Promise<void> {
+export async function ApplicationWorkflow(applicationId: string, deadline: Date | string): Promise<void> {
+  // Ensure deadline is a Date object
+  const deadlineDate = deadline instanceof Date ? deadline : new Date(deadline)
+  
   log.info(`Starting ApplicationWorkflow for application ${applicationId}`, {
     applicationId,
-    deadline: deadline.toISOString(),
+    deadline: deadlineDate.toISOString(),
   })
 
   // Initialize workflow state
   const state: WorkflowState = {
     applicationId,
     status: 'Created',
-    deadline,
-    originalDeadline: deadline,
+    deadline: deadlineDate,
+    originalDeadline: deadlineDate,
     createdAt: new Date(),
     updatedAt: new Date(),
   }

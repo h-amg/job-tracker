@@ -41,7 +41,7 @@ export class TemporalClient {
 
   static async startApplicationWorkflow(
     applicationId: string,
-    deadline: Date,
+    deadline: Date | string,
     options?: {
       workflowId?: string
       taskQueue?: string
@@ -51,9 +51,12 @@ export class TemporalClient {
     
     const workflowId = options?.workflowId || `application-workflow-${applicationId}`
     const taskQueue = options?.taskQueue || 'application-task-queue'
+    
+    // Ensure deadline is a Date object
+    const deadlineDate = deadline instanceof Date ? deadline : new Date(deadline)
 
     const handle = await client.workflow.start('ApplicationWorkflow', {
-      args: [applicationId, deadline],
+      args: [applicationId, deadlineDate],
       taskQueue,
       workflowId,
       // Set workflow execution timeout to 1 year (applications can be long-running)

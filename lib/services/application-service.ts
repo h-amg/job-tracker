@@ -8,7 +8,7 @@ export const CreateApplicationSchema = z.object({
   role: z.string().min(1, 'Role is required'),
   jobDescription: z.string().min(1, 'Job description is required'),
   resumeUrl: z.string().optional(),
-  deadline: z.date(),
+  deadline: z.string().pipe(z.coerce.date()),
   notes: z.string().optional(),
   salary: z.string().optional(),
   location: z.string().optional(),
@@ -20,7 +20,7 @@ export const UpdateApplicationSchema = CreateApplicationSchema.partial()
 export const UpdateStatusSchema = z.object({
   status: z.nativeEnum(ApplicationStatus),
   notes: z.string().optional(),
-  interviewDate: z.date().optional(),
+  interviewDate: z.string().pipe(z.coerce.date()).optional(),
 })
 
 export type CreateApplicationInput = z.infer<typeof CreateApplicationSchema>

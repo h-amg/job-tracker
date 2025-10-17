@@ -1,5 +1,7 @@
 import { Worker } from '@temporalio/worker'
 import { Connection } from '@temporalio/client'
+import { fileURLToPath } from 'url'
+import { dirname } from 'path'
 import * as activities from './activities/application-activities'
 import { ApplicationWorkflow, CoverLetterGenerationWorkflow } from './workflows/application-workflow'
 
@@ -71,7 +73,9 @@ process.on('unhandledRejection', (reason, promise) => {
 })
 
 // Run the worker
-if (require.main === module) {
+const __filename = fileURLToPath(import.meta.url)
+
+if (process.argv[1] === __filename) {
   run().catch((error) => {
     console.error('Failed to start worker:', error)
     process.exit(1)
