@@ -8,6 +8,7 @@ export const CreateApplicationSchema = z.object({
   role: z.string().min(1, 'Role is required'),
   jobDescription: z.string().min(1, 'Job description is required'),
   resumeUrl: z.string().optional(),
+  coverLetterUrl: z.string().optional(),
   // Accept ISO date strings from JSON and coerce to Date
   deadline: z.coerce.date(),
   notes: z.string().optional(),
