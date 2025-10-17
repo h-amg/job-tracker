@@ -8,19 +8,19 @@ export function Footer() {
           <p>© 2024 JobTracker. Track your job applications efficiently.</p>
           <div className="flex items-center gap-4">
             <Link
-              href="/about" as="/about"
+              href={"/about" as any}
               className="hover:text-foreground transition-colors"
             >
               About
             </Link>
             <Link
-              href="/privacy" as="/privacy"
+              href={"/privacy" as any}
               className="hover:text-foreground transition-colors"
             >
               Privacy
             </Link>
             <Link
-              href="/help" as="/help"
+              href={"/help" as any}
               className="hover:text-foreground transition-colors"
             >
               Help

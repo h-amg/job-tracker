@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { applicationApi } from "@/lib/api-client";
-import { getDaysUntilDeadline, isOverdue, type Application, type TimelineEvent } from "@/lib/data/job-applications-data";
+import { getDaysUntilDeadline, isOverdue, type Application, type ApplicationStatus, type TimelineEvent } from "@/lib/data/job-applications-data";
 import { StatusBadge } from "@/components/features/status-badge";
 import { TimelineView } from "@/components/features/timeline-view";
 import { ApplicationForm } from "@/components/features/application-form";
@@ -48,13 +48,18 @@ export function ApplicationDetail({ applicationId }: ApplicationDetailProps) {
       try {
         const res = await applicationApi.getApplication(applicationId);
         if (!res.success || !res.data) throw new Error(res.error || "Failed to load application");
-        const app = res.data as Application;
-        const converted = {
-          ...app,
-          deadline: new Date(app.deadline),
-          createdAt: new Date(app.createdAt),
-          updatedAt: new Date(app.updatedAt),
-          interviewDate: app.interviewDate ? new Date(app.interviewDate) : undefined,
+        // API returns dates as strings, convert them to Date objects
+        const apiApp = res.data;
+        const converted: Application = {
+          ...apiApp,
+          status: apiApp.status as ApplicationStatus,
+          resumeLink: apiApp.resumeUrl || '',
+          coverLetterLink: apiApp.coverLetterUrl,
+          deadline: new Date(apiApp.deadline),
+          createdAt: new Date(apiApp.createdAt),
+          updatedAt: new Date(apiApp.updatedAt),
+          interviewDate: apiApp.interviewDate ? new Date(apiApp.interviewDate) : undefined,
+          jobType: apiApp.jobType as "Full-time" | "Part-time" | "Contract" | "Internship" | undefined,
         };
         setApplication(converted);
 

@@ -3,7 +3,7 @@
 import { useState, useEffect, useCallback } from "react";
 import { ApplicationStatus } from "@prisma/client";
 import { applicationApi, useApiCall, type ApiApplication } from "@/lib/api-client";
-import { type Application } from "@/lib/data/job-applications-data";
+import { type Application as AppData } from "@/lib/data/job-applications-data";
 import { StatsOverview } from "@/components/features/stats-overview";
 import { ReminderBanner } from "@/components/features/reminder-banner";
 import { ApplicationCard } from "@/components/features/application-card";
@@ -20,28 +20,10 @@ import {
 import { SearchIcon, FilterIcon, SortDescIcon, LoaderIcon } from "lucide-react";
 import { toast } from "sonner";
 
-// Type definitions for API responses
-interface Application {
-  id: string;
-  company: string;
-  role: string;
-  jobDescription: string;
-  resumeUrl?: string;
-  coverLetterUrl?: string;
-  status: ApplicationStatus;
-  deadline: string; // ISO string from API
-  createdAt: string;
-  updatedAt: string;
-  notes?: string;
-  interviewDate?: string;
-  salary?: string;
-  location?: string;
-  jobType?: string;
+// Type definitions for API responses (dates as strings from API)
+interface ApiApplicationData extends ApiApplication {
   timelineEvents?: TimelineEvent[];
   notifications?: Notification[];
-  // Add missing properties for compatibility
-  resumeLink: string;
-  coverLetterLink?: string;
 }
 
 interface TimelineEvent {
@@ -75,10 +57,10 @@ export function Dashboard() {
   const [error, setError] = useState<string | null>(null);
 
   // API call hooks
-  const { execute: fetchApplications } = useApiCall<Application[]>();
-  const { execute: createApplication, loading: createLoading } = useApiCall<Application>();
-  const { execute: updateStatus } = useApiCall<Application>();
-  const { execute: archiveApplication } = useApiCall<Application>();
+  const { execute: fetchApplications } = useApiCall<ApiApplication[]>();
+  const { execute: createApplication, loading: createLoading } = useApiCall<ApiApplication>();
+  const { execute: updateStatus } = useApiCall<ApiApplication>();
+  const { execute: archiveApplication } = useApiCall<ApiApplication>();
 
   const loadApplications = useCallback(async () => {
     setLoading(true);
@@ -93,7 +75,7 @@ export function Dashboard() {
         });
         
         if (response.success && response.data) {
-          setApplications(response.data as Application[]);
+          setApplications(response.data as ApiApplication[]);
         } else {
           throw new Error(response.error || 'Failed to fetch applications');
         }
@@ -161,7 +143,7 @@ export function Dashboard() {
         const response = await applicationApi.createApplication(apiData);
         
         if (response.success && response.data) {
-          setApplications(prev => [response.data as Application, ...prev]);
+          setApplications(prev => [response.data as ApiApplication, ...prev]);
           toast.success('Application created successfully');
           setFormOpen(false);
         } else {
@@ -191,7 +173,7 @@ export function Dashboard() {
         if (response.success && response.data) {
           setApplications(prev => 
             prev.map(app => 
-              app.id === selectedAppId ? response.data as Application : app
+              app.id === selectedAppId ? response.data as ApiApplication : app
             )
           );
           toast.success('Status updated successfully');
@@ -231,14 +213,14 @@ export function Dashboard() {
   const selectedApp = applications.find((app) => app.id === selectedAppId);
 
   // Convert API data to match existing component expectations
-  const convertedApplications: Application[] = applications.map(app => ({
+  const convertedApplications: AppData[] = applications.map(app => ({
     ...app,
-    resumeLink: app.resumeUrl,
+    status: app.status as ApplicationStatus,
+    resumeLink: app.resumeUrl || '',
     deadline: new Date(app.deadline),
     createdAt: new Date(app.createdAt),
     updatedAt: new Date(app.updatedAt),
     interviewDate: app.interviewDate ? new Date(app.interviewDate) : undefined,
-    resumeLink: app.resumeUrl || '',
     coverLetterLink: app.coverLetterUrl,
     jobType: app.jobType as "Full-time" | "Part-time" | "Contract" | "Internship" | undefined,
   }));
@@ -378,13 +360,16 @@ export function Dashboard() {
         ) : (
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
             {sortedApplications.map((app) => {
-              const convertedApp: Application = {
+              const convertedApp: AppData = {
                 ...app,
-                resumeLink: app.resumeUrl,
+                status: app.status as ApplicationStatus,
+                resumeLink: app.resumeUrl || '',
                 deadline: new Date(app.deadline),
                 createdAt: new Date(app.createdAt),
                 updatedAt: new Date(app.updatedAt),
                 interviewDate: app.interviewDate ? new Date(app.interviewDate) : undefined,
+                coverLetterLink: app.coverLetterUrl,
+                jobType: app.jobType as "Full-time" | "Part-time" | "Contract" | "Internship" | undefined,
               };
               return (
                 <ApplicationCard
@@ -403,7 +388,7 @@ export function Dashboard() {
       <ApplicationForm
         open={formOpen}
         onOpenChange={setFormOpen}
-        onSubmit={handleCreateApplication as (data: Partial<Application>) => void}
+        onSubmit={handleCreateApplication as (data: Partial<AppData>) => void}
         mode="create"
       />
 
@@ -411,18 +396,18 @@ export function Dashboard() {
         <ApplicationForm
           application={{
             ...selectedApp,
-            resumeLink: selectedApp.resumeUrl,
+            status: selectedApp.status as ApplicationStatus,
+            resumeLink: selectedApp.resumeUrl || '',
             deadline: new Date(selectedApp.deadline),
             createdAt: new Date(selectedApp.createdAt),
             updatedAt: new Date(selectedApp.updatedAt),
             interviewDate: selectedApp.interviewDate ? new Date(selectedApp.interviewDate) : undefined,
-            resumeLink: selectedApp.resumeUrl || '',
             coverLetterLink: selectedApp.coverLetterUrl,
             jobType: selectedApp.jobType as "Full-time" | "Part-time" | "Contract" | "Internship" | undefined,
           }}
           open={statusFormOpen}
           onOpenChange={setStatusFormOpen}
-          onSubmit={handleStatusUpdateSubmit as (data: Partial<Application>) => void}
+          onSubmit={handleStatusUpdateSubmit as (data: Partial<AppData>) => void}
           mode="status"
         />
       )}

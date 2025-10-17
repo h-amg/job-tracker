@@ -142,7 +142,8 @@ export async function ApplicationWorkflow(applicationId: string, deadline: Date 
     }
 
     // Check if workflow was cancelled during wait
-    if (state.cancelled || state.status === 'Archived') {
+    // Note: Signal handlers can change status asynchronously, so we check if it's no longer Active
+    if (state.cancelled || state.status !== 'Active') {
       log.info(`Workflow cancelled before deadline`, { applicationId })
       return
     }
@@ -168,7 +169,8 @@ export async function ApplicationWorkflow(applicationId: string, deadline: Date 
     await sleep(gracePeriodMs)
 
     // Check if workflow was cancelled during grace period
-    if (state.cancelled || state.status === 'Archived') {
+    // Note: Signal handlers can change status asynchronously, so we check if it's no longer in GracePeriod
+    if (state.cancelled || state.status !== 'GracePeriod') {
       log.info(`Workflow cancelled during grace period`, { applicationId })
       return
     }
