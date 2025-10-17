@@ -18,7 +18,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { PaginationComponent, ItemsPerPageSelector } from "@/components/ui/pagination";
-import { SearchIcon, FilterIcon, SortDescIcon, LoaderIcon } from "lucide-react";
+import { SearchIcon, FilterIcon, LoaderIcon } from "lucide-react";
 import { toast } from "sonner";
 import { ApplicationCardSkeleton, StatsOverviewSkeleton, SearchBarSkeleton } from "@/components/features/skeleton-components";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -29,7 +29,6 @@ export function Dashboard() {
   const [applications, setApplications] = useState<ApiApplication[]>([]);
   const [searchQuery, setSearchQuery] = useState("");
   const [statusFilter, setStatusFilter] = useState<ApplicationStatus | "All">("All");
-  const [sortBy, setSortBy] = useState<"deadline" | "created" | "updated">("deadline");
   const [formOpen, setFormOpen] = useState(false);
   const [statusFormOpen, setStatusFormOpen] = useState(false);
   const [selectedAppId, setSelectedAppId] = useState<string | null>(null);
@@ -114,25 +113,14 @@ export function Dashboard() {
     return matchesSearch && matchesStatus;
   });
 
-  // Sort applications
-  const sortedApplications = [...filteredApplications].sort((a, b) => {
-    switch (sortBy) {
-      case "deadline":
-        return new Date(a.deadline).getTime() - new Date(b.deadline).getTime();
-      case "created":
-        return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
-      case "updated":
-        return new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime();
-      default:
-        return 0;
-    }
-  });
+  // Applications are already sorted by created date descending from the database
+  const displayedApplications = filteredApplications;
 
   // Client-side pagination
-  const totalPages = Math.ceil(sortedApplications.length / itemsPerPage);
+  const totalPages = Math.ceil(displayedApplications.length / itemsPerPage);
   const startIndex = (currentPage - 1) * itemsPerPage;
   const endIndex = startIndex + itemsPerPage;
-  const paginatedApplications = sortedApplications.slice(startIndex, endIndex);
+  const paginatedApplications = displayedApplications.slice(startIndex, endIndex);
   
   // Debug pagination calculations
   console.log('Pagination Debug:', {
@@ -140,7 +128,7 @@ export function Dashboard() {
     itemsPerPage,
     totalApplications: applications.length,
     filteredApplications: filteredApplications.length,
-    sortedApplications: sortedApplications.length,
+    displayedApplications: displayedApplications.length,
     totalPages,
     startIndex,
     endIndex,
@@ -367,25 +355,6 @@ export function Dashboard() {
             </Select>
           </div>
 
-          {/* Sort */}
-          <div className="w-full md:w-48">
-            <Select
-              value={sortBy}
-              onValueChange={(value) =>
-                setSortBy(value as "deadline" | "created" | "updated")
-              }
-            >
-              <SelectTrigger>
-                <SortDescIcon className="h-4 w-4 mr-2" />
-                <SelectValue placeholder="Sort by" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="deadline">Deadline</SelectItem>
-                <SelectItem value="created">Date Created</SelectItem>
-                <SelectItem value="updated">Last Updated</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
         </div>
       </div>
 
@@ -394,7 +363,7 @@ export function Dashboard() {
         <div className="flex items-center justify-between mb-4">
           <div className="flex items-center gap-4">
             <h2 className="text-xl font-semibold">
-              Applications ({sortedApplications.length})
+              Applications ({displayedApplications.length})
             </h2>
             <ItemsPerPageSelector
               value={itemsPerPage}
@@ -416,7 +385,7 @@ export function Dashboard() {
           </Button>
         </div>
 
-        {sortedApplications.length === 0 ? (
+        {displayedApplications.length === 0 ? (
           <div className="text-center py-12 bg-card border border-border rounded-lg">
             <p className="text-muted-foreground mb-4">
               {searchQuery || statusFilter !== "All"
@@ -432,7 +401,6 @@ export function Dashboard() {
         ) : (
           <>
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 mb-6">
-              {console.log('Rendering applications:', paginatedApplications.length, 'apps for page', currentPage)}
               {paginatedApplications.map((app) => {
                 const convertedApp: AppData = {
                   ...app,
@@ -460,7 +428,6 @@ export function Dashboard() {
             {/* Pagination Controls */}
             {totalPages > 1 && (
               <div className="flex justify-center">
-                {console.log('Rendering PaginationComponent with:', { currentPage, totalPages })}
                 <PaginationComponent
                   currentPage={currentPage}
                   totalPages={totalPages}
