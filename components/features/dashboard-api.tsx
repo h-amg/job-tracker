@@ -8,9 +8,10 @@ import { StatsOverview } from "@/components/features/stats-overview";
 import { ReminderBanner } from "@/components/features/reminder-banner";
 import { ApplicationCard } from "@/components/features/application-card";
 import { ApplicationForm } from "@/components/features/application-form";
+import { InterviewCalendar } from "@/components/features/interview-calendar";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { SearchIcon, LoaderIcon } from "lucide-react";
+import { SearchIcon, LoaderIcon, LayoutGridIcon, CalendarIcon } from "lucide-react";
 import { toast } from "sonner";
 import { ApplicationCardSkeleton, StatsOverviewSkeleton, SearchBarSkeleton } from "@/components/features/skeleton-components";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -24,6 +25,7 @@ export function Dashboard() {
   const [searchQuery, setSearchQuery] = useState("");
   const [debouncedSearchQuery, setDebouncedSearchQuery] = useState("");
   const [statusFilter, setStatusFilter] = useState<ApplicationStatus | "All">("All");
+  const [viewMode, setViewMode] = useState<'cards' | 'calendar'>('cards');
   const [formOpen, setFormOpen] = useState(false);
   const [statusFormOpen, setStatusFormOpen] = useState(false);
   const [selectedAppId, setSelectedAppId] = useState<string | null>(null);
@@ -133,6 +135,13 @@ export function Dashboard() {
     setHasNextPage(true);
     loadApplications(1, false);
   }, [statusFilter, debouncedSearchQuery]);
+
+  // Reset to cards view when filter changes away from Interview
+  useEffect(() => {
+    if (statusFilter !== "Interview") {
+      setViewMode('cards');
+    }
+  }, [statusFilter]);
 
   // Fetch applications on component mount
   useEffect(() => {
@@ -384,12 +393,34 @@ export function Dashboard() {
       </div>
 
       {/* Applications List */}
-      <div>
+      <div className={statusFilter === "Interview" && viewMode === 'calendar' ? "w-full" : ""}>
         <div className="flex items-center justify-between mb-4">
           <div className="flex items-center gap-4">
             <h2 className="text-xl font-semibold">
               Applications ({paginationInfo?.totalCount || displayedApplications.length})
             </h2>
+            {statusFilter === "Interview" && (
+              <div className="flex items-center gap-2">
+                <Button
+                  variant={viewMode === 'cards' ? 'default' : 'outline'}
+                  size="sm"
+                  onClick={() => setViewMode('cards')}
+                  className="flex items-center gap-2"
+                >
+                  <LayoutGridIcon className="h-4 w-4" />
+                  Cards
+                </Button>
+                <Button
+                  variant={viewMode === 'calendar' ? 'default' : 'outline'}
+                  size="sm"
+                  onClick={() => setViewMode('calendar')}
+                  className="flex items-center gap-2"
+                >
+                  <CalendarIcon className="h-4 w-4" />
+                  Calendar
+                </Button>
+              </div>
+            )}
           </div>
           <Button 
             onClick={() => setFormOpen(true)}
@@ -421,45 +452,53 @@ export function Dashboard() {
           </div>
         ) : (
           <>
-            <div className="max-h-[800px] overflow-y-auto mb-6">
-              <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-                {displayedApplications.map((app) => {
-                  const convertedApp: AppData = {
-                    ...app,
-                    status: app.status as ApplicationStatus,
-                    resumeLink: app.resumeUrl || '',
-                    deadline: new Date(app.deadline),
-                    createdAt: new Date(app.createdAt),
-                    updatedAt: new Date(app.updatedAt),
-                    interviewDate: app.interviewDate ? new Date(app.interviewDate) : undefined,
-                    coverLetterLink: app.coverLetterUrl,
-                    jobType: app.jobType as "Full-time" | "Part-time" | "Contract" | "Internship" | undefined,
-                  };
-                  return (
-                    <ApplicationCard
-                      key={`${app.id}-${app.updatedAt}`}
-                      application={convertedApp}
-                      onStatusUpdate={handleStatusUpdate}
-                      onArchive={handleArchiveApplication}
-                      isUpdating={updatingApplications.has(app.id)}
-                    />
-                  );
-                })}
-              </div>
-            </div>
-            
-            {/* Infinite Scroll Loading Indicator */}
-            {loadingMore && (
-              <div className="flex justify-center py-8">
-                <div className="flex items-center gap-2 text-muted-foreground">
-                  <LoaderIcon className="h-4 w-4 animate-spin" />
-                  <span>Loading more applications...</span>
+            {statusFilter === "Interview" && viewMode === 'calendar' ? (
+              <InterviewCalendar 
+                applications={convertedApplications}
+              />
+            ) : (
+              <>
+                <div className="max-h-[800px] overflow-y-auto mb-6">
+                  <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+                    {displayedApplications.map((app) => {
+                      const convertedApp: AppData = {
+                        ...app,
+                        status: app.status as ApplicationStatus,
+                        resumeLink: app.resumeUrl || '',
+                        deadline: new Date(app.deadline),
+                        createdAt: new Date(app.createdAt),
+                        updatedAt: new Date(app.updatedAt),
+                        interviewDate: app.interviewDate ? new Date(app.interviewDate) : undefined,
+                        coverLetterLink: app.coverLetterUrl,
+                        jobType: app.jobType as "Full-time" | "Part-time" | "Contract" | "Internship" | undefined,
+                      };
+                      return (
+                        <ApplicationCard
+                          key={`${app.id}-${app.updatedAt}`}
+                          application={convertedApp}
+                          onStatusUpdate={handleStatusUpdate}
+                          onArchive={handleArchiveApplication}
+                          isUpdating={updatingApplications.has(app.id)}
+                        />
+                      );
+                    })}
+                  </div>
                 </div>
-              </div>
+                
+                {/* Infinite Scroll Loading Indicator */}
+                {loadingMore && (
+                  <div className="flex justify-center py-8">
+                    <div className="flex items-center gap-2 text-muted-foreground">
+                      <LoaderIcon className="h-4 w-4 animate-spin" />
+                      <span>Loading more applications...</span>
+                    </div>
+                  </div>
+                )}
+                
+                {/* Infinite Scroll Trigger */}
+                <div ref={elementRef} className="h-4" />
+              </>
             )}
-            
-            {/* Infinite Scroll Trigger */}
-            <div ref={elementRef} className="h-4" />
           </>
         )}
       </div>
