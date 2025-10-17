@@ -227,7 +227,7 @@ export const useApiCall = <T>() => {
   const [error, setError] = useState<string | null>(null)
   const [data, setData] = useState<T | null>(null)
 
-  const execute = async (apiCall: () => Promise<ApiResponse<T>>) => {
+  const execute = useCallback(async (apiCall: () => Promise<ApiResponse<T>>) => {
     setLoading(true)
     setError(null)
     
@@ -244,20 +244,22 @@ export const useApiCall = <T>() => {
     } finally {
       setLoading(false)
     }
-  }
+  }, [])
+
+  const reset = useCallback(() => {
+    setLoading(false)
+    setError(null)
+    setData(null)
+  }, [])
 
   return {
     loading,
     error,
     data,
     execute,
-    reset: () => {
-      setLoading(false)
-      setError(null)
-      setData(null)
-    },
+    reset,
   }
 }
 
 // Import useState for the hook
-import { useState } from 'react'
+import { useState, useCallback } from 'react'
