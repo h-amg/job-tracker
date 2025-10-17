@@ -37,6 +37,7 @@ PaginationItem.displayName = "PaginationItem"
 
 type PaginationLinkProps = {
   isActive?: boolean
+  size?: "default" | "sm" | "lg" | "icon"
 } & React.ComponentProps<"a">
 
 const PaginationLink = ({
@@ -106,6 +107,7 @@ interface PaginationProps {
   currentPage: number
   totalPages: number
   onPageChange: (page: number) => void
+  showFirstLast?: boolean
   maxVisiblePages?: number
   className?: string
 }
@@ -114,6 +116,7 @@ export function PaginationComponent({
   currentPage,
   totalPages,
   onPageChange,
+  showFirstLast = true,
   maxVisiblePages = 5,
   className,
 }: PaginationProps) {
@@ -171,6 +174,7 @@ export function PaginationComponent({
           <Button
             variant="outline"
             size="sm"
+            type="button"
             onClick={() => onPageChange(currentPage - 1)}
             disabled={currentPage <= 1}
             className="gap-1"
@@ -188,6 +192,7 @@ export function PaginationComponent({
               <Button
                 variant={currentPage === page ? "default" : "outline"}
                 size="sm"
+                type="button"
                 onClick={() => onPageChange(page as number)}
                 className="w-10"
               >
@@ -201,6 +206,7 @@ export function PaginationComponent({
           <Button
             variant="outline"
             size="sm"
+            type="button"
             onClick={() => onPageChange(currentPage + 1)}
             disabled={currentPage >= totalPages}
             className="gap-1"

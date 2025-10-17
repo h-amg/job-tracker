@@ -17,9 +17,11 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { PaginationComponent } from "@/components/ui/pagination";
+import { PaginationComponent, ItemsPerPageSelector } from "@/components/ui/pagination";
 import { SearchIcon, FilterIcon, SortDescIcon, LoaderIcon } from "lucide-react";
 import { toast } from "sonner";
+import { ApplicationCardSkeleton, StatsOverviewSkeleton, SearchBarSkeleton } from "@/components/features/skeleton-components";
+import { Skeleton } from "@/components/ui/skeleton";
 
 // Type definitions for API responses (dates as strings from API)
 
@@ -33,10 +35,11 @@ export function Dashboard() {
   const [selectedAppId, setSelectedAppId] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [updatingApplications, setUpdatingApplications] = useState<Set<string>>(new Set());
   
   // Client-side pagination state
   const [currentPage, setCurrentPage] = useState(1);
-  const itemsPerPage = 4; // Fixed to 4 as requested
+  const [itemsPerPage, setItemsPerPage] = useState(4); // Fixed to 4 as requested
 
   // API call hooks
   const { execute: fetchApplications } = useApiCall<ApiApplication[]>();
@@ -72,12 +75,29 @@ export function Dashboard() {
     }
   }, [fetchApplications, statusFilter, searchQuery]);
 
+  // Reset to first page when filters change
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [statusFilter, searchQuery, itemsPerPage]);
+
   // Fetch applications on component mount
   useEffect(() => {
     loadApplications();
   }, [loadApplications]);
 
-  // Filter applications (client-side filtering for better UX)
+  // Pagination handlers
+  const handlePageChange = useCallback((page: number) => {
+    console.log('Page change requested:', page, 'Current page before:', currentPage);
+    setCurrentPage(page);
+    console.log('setCurrentPage called with:', page);
+  }, [currentPage]);
+
+  const handleItemsPerPageChange = useCallback((newItemsPerPage: number) => {
+    setItemsPerPage(newItemsPerPage);
+    setCurrentPage(1); // Reset to first page when changing items per page
+  }, []);
+
+  // Client-side filtering and sorting
   const filteredApplications = applications.filter((app) => {
     // Exclude archived from main view
     if (app.status === "Archived") return false;
@@ -113,16 +133,19 @@ export function Dashboard() {
   const startIndex = (currentPage - 1) * itemsPerPage;
   const endIndex = startIndex + itemsPerPage;
   const paginatedApplications = sortedApplications.slice(startIndex, endIndex);
-
-  // Reset to first page when filters change
-  useEffect(() => {
-    setCurrentPage(1);
-  }, [statusFilter, searchQuery, sortBy]);
-
-  // Pagination handlers
-  const handlePageChange = useCallback((page: number) => {
-    setCurrentPage(page);
-  }, []);
+  
+  // Debug pagination calculations
+  console.log('Pagination Debug:', {
+    currentPage,
+    itemsPerPage,
+    totalApplications: applications.length,
+    filteredApplications: filteredApplications.length,
+    sortedApplications: sortedApplications.length,
+    totalPages,
+    startIndex,
+    endIndex,
+    paginatedApplicationsLength: paginatedApplications.length
+  });
 
   const handleStatusUpdate = (id: string) => {
     setSelectedAppId(id);
@@ -158,6 +181,9 @@ export function Dashboard() {
   const handleStatusUpdateSubmit = async (data: { status: ApplicationStatus; notes?: string; interviewDate?: Date }) => {
     if (!selectedAppId) return;
 
+    // Add to updating set
+    setUpdatingApplications(prev => new Set(prev).add(selectedAppId));
+
     try {
       await updateStatus(async () => {
         // Convert Date to string for API
@@ -185,10 +211,20 @@ export function Dashboard() {
       });
     } catch {
       toast.error('Failed to update status');
+    } finally {
+      // Remove from updating set
+      setUpdatingApplications(prev => {
+        const newSet = new Set(prev);
+        newSet.delete(selectedAppId);
+        return newSet;
+      });
     }
   };
 
   const handleArchiveApplication = async (id: string) => {
+    // Add to updating set
+    setUpdatingApplications(prev => new Set(prev).add(id));
+
     try {
       await archiveApplication(async () => {
         const response = await applicationApi.updateStatus(id, { status: 'Archived' });
@@ -205,6 +241,13 @@ export function Dashboard() {
       });
     } catch {
       toast.error('Failed to archive application');
+    } finally {
+      // Remove from updating set
+      setUpdatingApplications(prev => {
+        const newSet = new Set(prev);
+        newSet.delete(id);
+        return newSet;
+      });
     }
   };
 
@@ -225,10 +268,35 @@ export function Dashboard() {
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center min-h-[400px]">
-        <div className="flex items-center space-x-2">
-          <LoaderIcon className="h-6 w-6 animate-spin" />
-          <span>Loading applications...</span>
+      <div className="space-y-8">
+        {/* Page Header */}
+        <div>
+          <h1 className="text-3xl font-bold mb-2">Dashboard</h1>
+          <p className="text-muted-foreground">
+            Track and manage your job applications in one place
+          </p>
+        </div>
+
+        {/* Statistics Skeleton */}
+        <StatsOverviewSkeleton />
+
+        {/* Filters and Search Skeleton */}
+        <SearchBarSkeleton />
+
+        {/* Applications List Skeleton */}
+        <div>
+          <div className="flex items-center justify-between mb-4">
+            <div className="flex items-center gap-4">
+              <Skeleton className="h-6 w-48" />
+              <Skeleton className="h-8 w-32" />
+            </div>
+            <Skeleton className="h-9 w-32" />
+          </div>
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+            {Array.from({ length: 10 }).map((_, index) => (
+              <ApplicationCardSkeleton key={index} />
+            ))}
+          </div>
         </div>
       </div>
     );
@@ -238,7 +306,7 @@ export function Dashboard() {
     return (
       <div className="text-center py-12">
         <p className="text-red-500 mb-4">{error}</p>
-        <Button onClick={loadApplications}>Try Again</Button>
+        <Button onClick={() => loadApplications()}>Try Again</Button>
       </div>
     );
   }
@@ -324,9 +392,15 @@ export function Dashboard() {
       {/* Applications List */}
       <div>
         <div className="flex items-center justify-between mb-4">
-          <h2 className="text-xl font-semibold">
-            Applications ({sortedApplications.length})
-          </h2>
+          <div className="flex items-center gap-4">
+            <h2 className="text-xl font-semibold">
+              Applications ({sortedApplications.length})
+            </h2>
+            <ItemsPerPageSelector
+              value={itemsPerPage}
+              onChange={handleItemsPerPageChange}
+            />
+          </div>
           <Button 
             onClick={() => setFormOpen(true)}
             disabled={createLoading}
@@ -358,6 +432,7 @@ export function Dashboard() {
         ) : (
           <>
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 mb-6">
+              {console.log('Rendering applications:', paginatedApplications.length, 'apps for page', currentPage)}
               {paginatedApplications.map((app) => {
                 const convertedApp: AppData = {
                   ...app,
@@ -376,6 +451,7 @@ export function Dashboard() {
                     application={convertedApp}
                     onStatusUpdate={handleStatusUpdate}
                     onArchive={handleArchiveApplication}
+                    isUpdating={updatingApplications.has(app.id)}
                   />
                 );
               })}
@@ -384,6 +460,7 @@ export function Dashboard() {
             {/* Pagination Controls */}
             {totalPages > 1 && (
               <div className="flex justify-center">
+                {console.log('Rendering PaginationComponent with:', { currentPage, totalPages })}
                 <PaginationComponent
                   currentPage={currentPage}
                   totalPages={totalPages}

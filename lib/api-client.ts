@@ -147,13 +147,29 @@ export interface ApiApplication {
   notifications?: unknown[]
 }
 
+// Pagination response type
+export interface PaginationInfo {
+  page: number
+  limit: number
+  totalCount: number
+  totalPages: number
+  hasNextPage: boolean
+  hasPreviousPage: boolean
+}
+
+export interface PaginatedApiResponse<T> extends ApiResponse<T> {
+  pagination?: PaginationInfo
+}
+
 // Application API methods
 export const applicationApi = {
-  // Get all applications
+  // Get all applications with pagination
   getApplications: (filters?: {
     status?: string
     search?: string
     includeArchived?: boolean
+    page?: number
+    limit?: number
   }) => apiClient.get<ApiApplication[]>('/api/applications', filters),
 
   // Get single application

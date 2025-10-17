@@ -5,6 +5,7 @@ import { getDaysUntilDeadline, isOverdue } from "@/lib/data/job-applications-dat
 import { StatusBadge } from "@/components/features/status-badge";
 import { CoverLetterModal } from "@/components/features/cover-letter-modal";
 import { Button } from "@/components/ui/button";
+import { Skeleton } from "@/components/ui/skeleton";
 import {
   CalendarIcon,
   MapPinIcon,
@@ -35,6 +36,7 @@ interface ApplicationCardProps {
   onStatusUpdate?: (id: string) => void;
   onArchive?: (id: string) => void;
   showActions?: boolean;
+  isUpdating?: boolean;
 }
 
 export function ApplicationCard({
@@ -42,11 +44,75 @@ export function ApplicationCard({
   onStatusUpdate,
   onArchive,
   showActions = true,
+  isUpdating = false,
 }: ApplicationCardProps) {
   const [coverLetterOpen, setCoverLetterOpen] = useState(false);
   const daysUntilDeadline = getDaysUntilDeadline(application.deadline);
   const deadlineOverdue = isOverdue(application.deadline);
   const deadlineUrgent = daysUntilDeadline >= 0 && daysUntilDeadline <= 3;
+
+  if (isUpdating) {
+    return (
+      <div className="bg-card border border-border rounded-lg p-5 flex flex-col h-full">
+        {/* Header Skeleton */}
+        <div className="flex items-start justify-between gap-4 mb-4">
+          <div className="flex-1 min-w-0 space-y-2">
+            <Skeleton className="h-6 w-3/4" />
+            <Skeleton className="h-4 w-1/2" />
+          </div>
+          <div className="flex items-center gap-2">
+            <Skeleton className="h-6 w-16 rounded-full" />
+            <Skeleton className="h-8 w-8" />
+          </div>
+        </div>
+
+        {/* Details Grid Skeleton */}
+        <div className="grid grid-cols-2 gap-3 mb-4">
+          <div className="flex items-center gap-2">
+            <Skeleton className="h-4 w-4" />
+            <Skeleton className="h-4 w-20" />
+          </div>
+          <div className="flex items-center gap-2">
+            <Skeleton className="h-4 w-4" />
+            <Skeleton className="h-4 w-16" />
+          </div>
+          <div className="flex items-center gap-2">
+            <Skeleton className="h-4 w-4" />
+            <Skeleton className="h-4 w-24" />
+          </div>
+          <div className="flex items-center gap-2">
+            <Skeleton className="h-4 w-4" />
+            <Skeleton className="h-4 w-20" />
+          </div>
+        </div>
+
+        {/* Interview Date Skeleton */}
+        <div className="mb-4 p-3 bg-muted/30 border border-border rounded-md">
+          <div className="flex items-center gap-2">
+            <Skeleton className="h-4 w-4" />
+            <Skeleton className="h-4 w-32" />
+          </div>
+        </div>
+
+        {/* Notes Skeleton */}
+        <div className="space-y-2 mb-4">
+          <Skeleton className="h-4 w-full" />
+          <Skeleton className="h-4 w-3/4" />
+        </div>
+
+        {/* Actions Skeleton */}
+        {showActions && (
+          <div className="flex flex-col gap-2.5 pt-4 border-t border-border mt-auto">
+            <Skeleton className="h-8 w-full" />
+            <div className="grid grid-cols-2 gap-2">
+              <Skeleton className="h-8 w-full" />
+              <Skeleton className="h-8 w-full" />
+            </div>
+          </div>
+        )}
+      </div>
+    );
+  }
 
   return (
     <div className="bg-card border border-border rounded-lg p-5 hover:shadow-md transition-all flex flex-col h-full">

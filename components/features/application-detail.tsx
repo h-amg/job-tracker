@@ -16,6 +16,7 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
+import { ApplicationDetailSkeleton } from "@/components/features/skeleton-components";
 import {
   ArrowLeftIcon,
   EditIcon,
@@ -83,11 +84,7 @@ export function ApplicationDetail({ applicationId }: ApplicationDetailProps) {
   }, [applicationId]);
 
   if (loading) {
-    return (
-      <div className="text-center py-12">
-        <p className="text-muted-foreground">Loading application...</p>
-      </div>
-    );
+    return <ApplicationDetailSkeleton />;
   }
 
   if (error) {

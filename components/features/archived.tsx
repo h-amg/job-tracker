@@ -7,6 +7,7 @@ import { type Application } from "@/lib/data/job-applications-data";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { ArchiveIcon, SearchIcon } from "lucide-react";
+import { ApplicationCardSkeleton, SearchBarSkeleton } from "@/components/features/skeleton-components";
 
 export function Archived() {
   const [searchQuery, setSearchQuery] = useState("");
@@ -57,8 +58,32 @@ export function Archived() {
 
   if (loading) {
     return (
-      <div className="text-center py-12">
-        <p className="text-muted-foreground">Loading archived applications...</p>
+      <div className="space-y-8">
+        {/* Page Header */}
+        <div>
+          <div className="flex items-center gap-3 mb-2">
+            <ArchiveIcon className="h-8 w-8 text-muted-foreground" />
+            <h1 className="text-3xl font-bold">Archived Applications</h1>
+          </div>
+          <p className="text-muted-foreground">
+            Applications that have been automatically archived or manually closed
+          </p>
+        </div>
+
+        {/* Search Skeleton */}
+        <SearchBarSkeleton />
+
+        {/* Applications List Skeleton */}
+        <div>
+          <div className="flex items-center justify-between mb-4">
+            <h2 className="text-xl font-semibold">Loading...</h2>
+          </div>
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+            {Array.from({ length: 4 }).map((_, index) => (
+              <ApplicationCardSkeleton key={index} />
+            ))}
+          </div>
+        </div>
       </div>
     );
   }
