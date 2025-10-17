@@ -67,13 +67,19 @@ export async function PUT(request: NextRequest, { params }: RouteParams) {
     // Signal workflow if deadline changed
     if (validatedData.deadline && existingApplication.workflowId) {
       try {
-        await TemporalClient.signalWorkflow(
+        const days = Math.ceil((validatedData.deadline.getTime() - existingApplication.deadline.getTime()) / (1000 * 60 * 60 * 24))
+        const workflowSignaled = await TemporalClient.extendDeadline(
           existingApplication.workflowId,
-          'extendDeadline',
-          [Math.ceil((validatedData.deadline.getTime() - existingApplication.deadline.getTime()) / (1000 * 60 * 60 * 24))]
+          days
         )
+        
+        // If workflow doesn't exist, clear the stale workflowId from database
+        if (!workflowSignaled) {
+          console.log(`Clearing stale workflowId for application ${params.id}`)
+          await ApplicationService.setWorkflowId(params.id, null)
+        }
       } catch (signalError) {
-        console.warn('Failed to signal workflow about deadline change:', signalError)
+        console.error('Failed to signal workflow about deadline change:', signalError)
       }
     }
 
@@ -125,9 +131,17 @@ export async function DELETE(request: NextRequest, { params }: RouteParams) {
     // Cancel workflow if it exists
     if (existingApplication.workflowId) {
       try {
-        await TemporalClient.cancelWorkflow(existingApplication.workflowId, 'Application deleted by user')
+        const workflowCancelled = await TemporalClient.cancelWorkflow(
+          existingApplication.workflowId,
+          'Application deleted by user'
+        )
+        
+        // If workflow doesn't exist, just log it (we're deleting the app anyway)
+        if (!workflowCancelled) {
+          console.log(`Workflow ${existingApplication.workflowId} not found, continuing with deletion`)
+        }
       } catch (workflowError) {
-        console.warn('Failed to cancel workflow:', workflowError)
+        console.error('Failed to cancel workflow:', workflowError)
       }
     }
 

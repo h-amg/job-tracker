@@ -78,6 +78,22 @@ export class TemporalClient {
     }
   }
 
+  static async workflowExists(workflowId: string): Promise<boolean> {
+    try {
+      const client = await this.getClient()
+      const handle = client.workflow.getHandle(workflowId)
+      await handle.describe()
+      return true
+    } catch (error: unknown) {
+      const err = error as { name?: string }
+      if (err && (err.name === 'WorkflowNotFoundError' || String(error).includes('workflow not found'))) {
+        return false
+      }
+      // For other errors, rethrow
+      throw error
+    }
+  }
+
   static async signalWorkflow(
     workflowId: string,
     signalName: string,
@@ -91,21 +107,45 @@ export class TemporalClient {
     console.log(`Sent signal ${signalName} to workflow ${workflowId}`)
   }
 
-  static async updateStatus(workflowId: string, status: string, notes?: string): Promise<void> {
+  static async updateStatus(workflowId: string, status: string, notes?: string): Promise<boolean> {
+    // Check if workflow exists before signaling
+    const exists = await this.workflowExists(workflowId)
+    if (!exists) {
+      console.warn(`Workflow ${workflowId} not found, skipping signal`)
+      return false
+    }
+    
     await this.signalWorkflow(workflowId, 'updateStatus', [status, notes])
+    return true
   }
 
-  static async extendDeadline(workflowId: string, days: number): Promise<void> {
+  static async extendDeadline(workflowId: string, days: number): Promise<boolean> {
+    // Check if workflow exists before signaling
+    const exists = await this.workflowExists(workflowId)
+    if (!exists) {
+      console.warn(`Workflow ${workflowId} not found, skipping extendDeadline signal`)
+      return false
+    }
+    
     await this.signalWorkflow(workflowId, 'extendDeadline', [days])
+    return true
   }
 
-  static async cancelWorkflow(workflowId: string, reason?: string): Promise<void> {
+  static async cancelWorkflow(workflowId: string, reason?: string): Promise<boolean> {
+    // Check if workflow exists before cancelling
+    const exists = await this.workflowExists(workflowId)
+    if (!exists) {
+      console.warn(`Workflow ${workflowId} not found, skipping cancellation`)
+      return false
+    }
+    
     const client = await this.getClient()
     
     const handle = client.workflow.getHandle(workflowId)
     await handle.cancel()
     
     console.log(`Cancelled workflow ${workflowId}${reason ? `: ${reason}` : ''}`)
+    return true
   }
 
   static async getWorkflowStatus(workflowId: string) {

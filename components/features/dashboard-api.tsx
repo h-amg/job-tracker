@@ -17,33 +17,11 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { PaginationComponent } from "@/components/ui/pagination";
 import { SearchIcon, FilterIcon, SortDescIcon, LoaderIcon } from "lucide-react";
 import { toast } from "sonner";
 
 // Type definitions for API responses (dates as strings from API)
-interface ApiApplicationData extends ApiApplication {
-  timelineEvents?: TimelineEvent[];
-  notifications?: Notification[];
-}
-
-interface TimelineEvent {
-  id: string;
-  applicationId: string;
-  status: ApplicationStatus;
-  note?: string;
-  timestamp: string;
-}
-
-interface Notification {
-  id: string;
-  applicationId: string;
-  type: string;
-  title: string;
-  message: string;
-  status: string;
-  timestamp: string;
-  read: boolean;
-}
 
 export function Dashboard() {
   const [applications, setApplications] = useState<ApiApplication[]>([]);
@@ -55,6 +33,10 @@ export function Dashboard() {
   const [selectedAppId, setSelectedAppId] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  
+  // Client-side pagination state
+  const [currentPage, setCurrentPage] = useState(1);
+  const itemsPerPage = 4; // Fixed to 4 as requested
 
   // API call hooks
   const { execute: fetchApplications } = useApiCall<ApiApplication[]>();
@@ -80,7 +62,7 @@ export function Dashboard() {
           throw new Error(response.error || 'Failed to fetch applications');
         }
         
-        return response as any;
+        return response;
       });
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to load applications');
@@ -126,12 +108,28 @@ export function Dashboard() {
     }
   });
 
+  // Client-side pagination
+  const totalPages = Math.ceil(sortedApplications.length / itemsPerPage);
+  const startIndex = (currentPage - 1) * itemsPerPage;
+  const endIndex = startIndex + itemsPerPage;
+  const paginatedApplications = sortedApplications.slice(startIndex, endIndex);
+
+  // Reset to first page when filters change
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [statusFilter, searchQuery, sortBy]);
+
+  // Pagination handlers
+  const handlePageChange = useCallback((page: number) => {
+    setCurrentPage(page);
+  }, []);
+
   const handleStatusUpdate = (id: string) => {
     setSelectedAppId(id);
     setStatusFormOpen(true);
   };
 
-  const handleCreateApplication = async (data: any) => {
+  const handleCreateApplication = async (data: Partial<AppData>) => {
     try {
       await createApplication(async () => {
         // Convert Date to string for API
@@ -150,7 +148,7 @@ export function Dashboard() {
           throw new Error(response.error || 'Failed to create application');
         }
         
-        return response as any;
+        return response;
       });
     } catch {
       toast.error('Failed to create application');
@@ -183,7 +181,7 @@ export function Dashboard() {
           throw new Error(response.error || 'Failed to update status');
         }
         
-        return response as any;
+        return response;
       });
     } catch {
       toast.error('Failed to update status');
@@ -203,7 +201,7 @@ export function Dashboard() {
           throw new Error(response.error || 'Failed to archive application');
         }
         
-        return response as any;
+        return response;
       });
     } catch {
       toast.error('Failed to archive application');
@@ -358,29 +356,43 @@ export function Dashboard() {
             )}
           </div>
         ) : (
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-            {sortedApplications.map((app) => {
-              const convertedApp: AppData = {
-                ...app,
-                status: app.status as ApplicationStatus,
-                resumeLink: app.resumeUrl || '',
-                deadline: new Date(app.deadline),
-                createdAt: new Date(app.createdAt),
-                updatedAt: new Date(app.updatedAt),
-                interviewDate: app.interviewDate ? new Date(app.interviewDate) : undefined,
-                coverLetterLink: app.coverLetterUrl,
-                jobType: app.jobType as "Full-time" | "Part-time" | "Contract" | "Internship" | undefined,
-              };
-              return (
-                <ApplicationCard
-                  key={app.id}
-                  application={convertedApp}
-                  onStatusUpdate={handleStatusUpdate}
-                  onArchive={handleArchiveApplication}
+          <>
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 mb-6">
+              {paginatedApplications.map((app) => {
+                const convertedApp: AppData = {
+                  ...app,
+                  status: app.status as ApplicationStatus,
+                  resumeLink: app.resumeUrl || '',
+                  deadline: new Date(app.deadline),
+                  createdAt: new Date(app.createdAt),
+                  updatedAt: new Date(app.updatedAt),
+                  interviewDate: app.interviewDate ? new Date(app.interviewDate) : undefined,
+                  coverLetterLink: app.coverLetterUrl,
+                  jobType: app.jobType as "Full-time" | "Part-time" | "Contract" | "Internship" | undefined,
+                };
+                return (
+                  <ApplicationCard
+                    key={app.id}
+                    application={convertedApp}
+                    onStatusUpdate={handleStatusUpdate}
+                    onArchive={handleArchiveApplication}
+                  />
+                );
+              })}
+            </div>
+            
+            {/* Pagination Controls */}
+            {totalPages > 1 && (
+              <div className="flex justify-center">
+                <PaginationComponent
+                  currentPage={currentPage}
+                  totalPages={totalPages}
+                  onPageChange={handlePageChange}
+                  className="mt-6"
                 />
-              );
-            })}
-          </div>
+              </div>
+            )}
+          </>
         )}
       </div>
 

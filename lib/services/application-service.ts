@@ -68,7 +68,7 @@ export class ApplicationService {
     })
   }
 
-  static async setWorkflowId(id: string, workflowId: string) {
+  static async setWorkflowId(id: string, workflowId: string | null) {
     return await prisma.application.update({
       where: { id },
       data: { workflowId },
