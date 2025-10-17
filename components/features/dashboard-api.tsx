@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useMemo } from "react";
 import { ApplicationStatus } from "@prisma/client";
 import { applicationApi, useApiCall, type ApiApplication, type PaginationInfo } from "@/lib/api-client";
 import { type Application as AppData } from "@/lib/data/job-applications-data";
@@ -27,6 +27,7 @@ import { useInfiniteScroll } from "@/hooks/use-infinite-scroll";
 
 export function Dashboard() {
   const [applications, setApplications] = useState<ApiApplication[]>([]);
+  const [allApplications, setAllApplications] = useState<ApiApplication[]>([]);
   const [searchQuery, setSearchQuery] = useState("");
   const [debouncedSearchQuery, setDebouncedSearchQuery] = useState("");
   const [statusFilter, setStatusFilter] = useState<ApplicationStatus | "All">("All");
@@ -57,6 +58,23 @@ export function Dashboard() {
 
     return () => clearTimeout(timer);
   }, [searchQuery]);
+
+  const loadAllApplications = useCallback(async () => {
+    try {
+      const response = await applicationApi.getApplications({
+        includeArchived: false,
+        page: 1,
+        limit: 1000, // Load all applications for stats
+      });
+      
+      if (response.success && response.data) {
+        const responseData = response as any;
+        setAllApplications(responseData.data);
+      }
+    } catch (err) {
+      console.error('Failed to load all applications for stats:', err);
+    }
+  }, []);
 
   const loadApplications = useCallback(async (page: number = 1, append: boolean = false) => {
     if (append) {
@@ -125,7 +143,8 @@ export function Dashboard() {
 
   // Fetch applications on component mount
   useEffect(() => {
-    loadApplications(1, false);
+    loadAllApplications(); // Load all applications for stats
+    loadApplications(1, false); // Load filtered applications for display
   }, []);
 
   // Infinite scroll hook
@@ -136,8 +155,16 @@ export function Dashboard() {
     threshold: 200,
   });
 
-  // Applications are already filtered and sorted by the API
-  const displayedApplications = applications || [];
+  // Handle "Rejected" filter to include both Rejected and Withdrawn applications
+  const displayedApplications = useMemo(() => {
+    if (statusFilter === "Rejected") {
+      // Filter allApplications to show both Rejected and Withdrawn
+      return allApplications.filter(app => 
+        app.status === "Rejected" || app.status === "Withdrawn"
+      );
+    }
+    return applications || [];
+  }, [applications, allApplications, statusFilter]);
 
   const handleStatusUpdate = (id: string) => {
     setSelectedAppId(id);
@@ -157,6 +184,7 @@ export function Dashboard() {
         
         if (response.success && response.data) {
           setApplications(prev => [response.data as ApiApplication, ...prev]);
+          setAllApplications(prev => [response.data as ApiApplication, ...prev]);
           toast.success('Application created successfully');
           setFormOpen(false);
         } else {
@@ -187,9 +215,15 @@ export function Dashboard() {
         const response = await applicationApi.updateStatus(selectedAppId, apiData);
         
         if (response.success && response.data) {
+          const updatedApp = response.data as ApiApplication;
           setApplications(prev => 
             prev.map(app => 
-              app.id === selectedAppId ? response.data as ApiApplication : app
+              app.id === selectedAppId ? updatedApp : app
+            )
+          );
+          setAllApplications(prev => 
+            prev.map(app => 
+              app.id === selectedAppId ? updatedApp : app
             )
           );
           toast.success('Status updated successfully');
@@ -222,8 +256,9 @@ export function Dashboard() {
         const response = await applicationApi.updateStatus(id, { status: 'Archived' });
         
         if (response.success && response.data) {
-          // Optimistically remove from the list
+          // Optimistically remove from both lists
           setApplications(prev => prev.filter(app => app.id !== id));
+          setAllApplications(prev => prev.filter(app => app.id !== id));
           toast.success('Application archived successfully');
         } else {
           throw new Error(response.error || 'Failed to archive application');
@@ -247,6 +282,19 @@ export function Dashboard() {
 
   // Convert API data to match existing component expectations
   const convertedApplications: AppData[] = applications?.map(app => ({
+    ...app,
+    status: app.status as ApplicationStatus,
+    resumeLink: app.resumeUrl || '',
+    deadline: new Date(app.deadline),
+    createdAt: new Date(app.createdAt),
+    updatedAt: new Date(app.updatedAt),
+    interviewDate: app.interviewDate ? new Date(app.interviewDate) : undefined,
+    coverLetterLink: app.coverLetterUrl,
+    jobType: app.jobType as "Full-time" | "Part-time" | "Contract" | "Internship" | undefined,
+  })) || [];
+
+  // Convert all applications for stats (unfiltered)
+  const convertedAllApplications: AppData[] = allApplications?.map(app => ({
     ...app,
     status: app.status as ApplicationStatus,
     resumeLink: app.resumeUrl || '',
@@ -314,7 +362,10 @@ export function Dashboard() {
       </div>
 
       {/* Statistics */}
-      <StatsOverview applications={convertedApplications} />
+      <StatsOverview 
+        applications={convertedAllApplications} 
+        onFilterChange={(status) => setStatusFilter(status as ApplicationStatus | "All")}
+      />
 
       {/* Reminders */}
       <ReminderBanner

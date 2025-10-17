@@ -55,14 +55,14 @@ export function StatsOverviewSkeleton() {
       {Array.from({ length: 6 }).map((_, index) => (
         <div
           key={index}
-          className="bg-card border border-border rounded-lg p-4"
+          className="bg-card border border-border rounded-lg p-4 text-center"
         >
-          <div className="flex items-center justify-between mb-2">
+          <div className="flex items-center justify-center mb-2">
             <Skeleton className="h-9 w-9 rounded-lg" />
           </div>
           <div className="space-y-1">
-            <Skeleton className="h-8 w-8" />
-            <Skeleton className="h-4 w-16" />
+            <Skeleton className="h-8 w-8 mx-auto" />
+            <Skeleton className="h-4 w-16 mx-auto" />
           </div>
         </div>
       ))}

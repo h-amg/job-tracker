@@ -8,7 +8,6 @@ import {
   BriefcaseIcon,
   LayoutDashboardIcon,
   ArchiveIcon,
-  SettingsIcon,
   PlusIcon,
 } from "lucide-react";
 import {
@@ -117,10 +116,6 @@ export function Header({ onAddApplication }: HeaderProps) {
               onViewApplication={handleViewApplication}
               onClearAll={handleClearAllNotifications}
             />
-
-            <Button variant="ghost" size="sm" className="h-9 w-9 p-0">
-              <SettingsIcon className="h-4 w-4" />
-            </Button>
           </div>
         </div>
 

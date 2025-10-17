@@ -13,9 +13,10 @@ import {
 
 interface StatsOverviewProps {
   applications: Application[];
+  onFilterChange?: (status: string) => void;
 }
 
-export function StatsOverview({ applications }: StatsOverviewProps) {
+export function StatsOverview({ applications, onFilterChange }: StatsOverviewProps) {
   const stats = getApplicationStats(applications);
 
   // Calculate success rate (offers / total non-archived)
@@ -34,6 +35,8 @@ export function StatsOverview({ applications }: StatsOverviewProps) {
       icon: BriefcaseIcon,
       color: "text-blue-600 dark:text-blue-400",
       bgColor: "bg-blue-100 dark:bg-blue-900",
+      filterValue: "All",
+      clickable: true,
     },
     {
       label: "Active",
@@ -41,6 +44,8 @@ export function StatsOverview({ applications }: StatsOverviewProps) {
       icon: ClockIcon,
       color: "text-purple-600 dark:text-purple-400",
       bgColor: "bg-purple-100 dark:bg-purple-900",
+      filterValue: "Active",
+      clickable: true,
     },
     {
       label: "Interviews",
@@ -48,6 +53,8 @@ export function StatsOverview({ applications }: StatsOverviewProps) {
       icon: CheckCircle2Icon,
       color: "text-indigo-600 dark:text-indigo-400",
       bgColor: "bg-indigo-100 dark:bg-indigo-900",
+      filterValue: "Interview",
+      clickable: true,
     },
     {
       label: "Offers",
@@ -55,6 +62,8 @@ export function StatsOverview({ applications }: StatsOverviewProps) {
       icon: TrophyIcon,
       color: "text-green-600 dark:text-green-400",
       bgColor: "bg-green-100 dark:bg-green-900",
+      filterValue: "Offer",
+      clickable: true,
     },
     {
       label: "Rejected",
@@ -62,6 +71,8 @@ export function StatsOverview({ applications }: StatsOverviewProps) {
       icon: XCircleIcon,
       color: "text-red-600 dark:text-red-400",
       bgColor: "bg-red-100 dark:bg-red-900",
+      filterValue: "Rejected",
+      clickable: true,
     },
     {
       label: "Success Rate",
@@ -69,8 +80,16 @@ export function StatsOverview({ applications }: StatsOverviewProps) {
       icon: TrendingUpIcon,
       color: "text-emerald-600 dark:text-emerald-400",
       bgColor: "bg-emerald-100 dark:bg-emerald-900",
+      filterValue: null,
+      clickable: false,
     },
   ];
+
+  const handleCardClick = (stat: typeof statCards[0]) => {
+    if (stat.clickable && onFilterChange && stat.filterValue !== null) {
+      onFilterChange(stat.filterValue);
+    }
+  };
 
   return (
     <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
@@ -79,9 +98,14 @@ export function StatsOverview({ applications }: StatsOverviewProps) {
         return (
           <div
             key={index}
-            className="bg-card border border-border rounded-lg p-4 hover:shadow-md transition-shadow"
+            className={`bg-card border border-border rounded-lg p-4 transition-all text-center ${
+              stat.clickable 
+                ? "hover:shadow-md hover:scale-105 cursor-pointer" 
+                : "hover:shadow-md"
+            }`}
+            onClick={() => handleCardClick(stat)}
           >
-            <div className="flex items-center justify-between mb-2">
+            <div className="flex items-center justify-center mb-2">
               <div className={`p-2 rounded-lg ${stat.bgColor}`}>
                 <Icon className={`h-5 w-5 ${stat.color}`} />
               </div>

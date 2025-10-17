@@ -204,7 +204,7 @@ export function getApplicationStats(applications: Application[]) {
   ).length;
   const offer = applications.filter((app) => app.status === "Offer").length;
   const rejected = applications.filter(
-    (app) => app.status === "Rejected"
+    (app) => app.status === "Rejected" || app.status === "Withdrawn"
   ).length;
   const archived = applications.filter(
     (app) => app.status === "Archived"
