@@ -72,12 +72,6 @@ export function Dashboard() {
             // Filter out duplicates by ID to prevent duplicate keys
             const existingIds = new Set(prev.map(app => app.id));
             const newApps = responseData.data.filter((app: any) => !existingIds.has(app.id));
-            
-            // Debug: Log if we're filtering out duplicates
-            if (newApps.length !== responseData.data.length) {
-              console.log(`Filtered out ${responseData.data.length - newApps.length} duplicate applications`);
-            }
-            
             return [...prev, ...newApps];
           });
         } else {
