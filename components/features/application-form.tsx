@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import {
   type Application,
   type ApplicationStatus,
@@ -30,6 +30,7 @@ import {
   BriefcaseIcon,
   FileTextIcon,
   UploadIcon,
+  LoaderIcon,
 } from "lucide-react";
 
 interface ApplicationFormProps {
@@ -38,6 +39,7 @@ interface ApplicationFormProps {
   onOpenChange: (open: boolean) => void;
   onSubmit: (data: Partial<Application>) => void;
   mode?: "create" | "edit" | "status";
+  loading?: boolean;
 }
 
 export function ApplicationForm({
@@ -46,6 +48,7 @@ export function ApplicationForm({
   onOpenChange,
   onSubmit,
   mode = "create",
+  loading = false,
 }: ApplicationFormProps) {
   const [formData, setFormData] = useState<Partial<Application>>({
     company: application?.company || "",
@@ -60,10 +63,27 @@ export function ApplicationForm({
       application?.deadline || new Date(Date.now() + 28 * 24 * 60 * 60 * 1000), // 4 weeks default
   });
 
+  // Clear form data when dialog closes (for create mode)
+  useEffect(() => {
+    if (!open && mode === "create") {
+      setFormData({
+        company: "",
+        role: "",
+        jobDescription: "",
+        location: "",
+        jobType: "Full-time",
+        salary: "",
+        status: "Active",
+        notes: "",
+        deadline: new Date(Date.now() + 28 * 24 * 60 * 60 * 1000), // 4 weeks default
+      });
+    }
+  }, [open, mode]);
+
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
+    if (loading) return; // Prevent multiple submissions
     onSubmit(formData);
-    onOpenChange(false);
   };
 
   const handleChange = (field: keyof Application, value: string | Date | ApplicationStatus) => {
@@ -137,10 +157,20 @@ export function ApplicationForm({
                 type="button"
                 variant="outline"
                 onClick={() => onOpenChange(false)}
+                disabled={loading}
               >
                 Cancel
               </Button>
-              <Button type="submit">Update Status</Button>
+              <Button type="submit" disabled={loading}>
+                {loading ? (
+                  <>
+                    <LoaderIcon className="h-4 w-4 mr-2 animate-spin" />
+                    Updating...
+                  </>
+                ) : (
+                  'Update Status'
+                )}
+              </Button>
             </DialogFooter>
           </form>
         </DialogContent>
@@ -313,11 +343,19 @@ export function ApplicationForm({
               type="button"
               variant="outline"
               onClick={() => onOpenChange(false)}
+              disabled={loading}
             >
               Cancel
             </Button>
-            <Button type="submit">
-              {mode === "create" ? "Add Application" : "Save Changes"}
+            <Button type="submit" disabled={loading}>
+              {loading ? (
+                <>
+                  <LoaderIcon className="h-4 w-4 mr-2 animate-spin" />
+                  {mode === "create" ? "Adding..." : "Saving..."}
+                </>
+              ) : (
+                mode === "create" ? "Add Application" : "Save Changes"
+              )}
             </Button>
           </DialogFooter>
         </form>

@@ -245,7 +245,7 @@ export function Archived() {
                 {(paginationInfo?.totalCount || displayedApplications.length) !== 1 ? "s" : ""}
               </h2>
             </div>
-            <div className="max-h-[600px] overflow-y-auto">
+            <div className="max-h-[800px] overflow-y-auto mb-6">
               <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
                 {displayedApplications.map((app) => (
                   <ApplicationCard

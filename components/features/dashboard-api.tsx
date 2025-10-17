@@ -449,6 +449,7 @@ export function Dashboard() {
         onOpenChange={setFormOpen}
         onSubmit={handleCreateApplication as (data: Partial<AppData>) => void}
         mode="create"
+        loading={createLoading}
       />
 
       {selectedApp && (
@@ -468,6 +469,7 @@ export function Dashboard() {
           onOpenChange={setStatusFormOpen}
           onSubmit={handleStatusUpdateSubmit as (data: Partial<AppData>) => void}
           mode="status"
+          loading={updatingApplications.has(selectedAppId || '')}
         />
       )}
     </div>
