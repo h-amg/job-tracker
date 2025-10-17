@@ -67,7 +67,7 @@ export class TemporalClient {
       })
       console.log(`Started workflow ${workflowId} for application ${applicationId}`)
       return handle
-    } catch (err: any) {
+    } catch (err: unknown) {
       // If a workflow with the same ID is already running, return a handle to it (idempotent start)
       if (err && (err.name === 'WorkflowExecutionAlreadyStartedError' || String(err).includes('Workflow execution already started'))) {
         console.warn(`Workflow ${workflowId} already started, returning existing handle`)
@@ -80,7 +80,7 @@ export class TemporalClient {
   static async signalWorkflow(
     workflowId: string,
     signalName: string,
-    args: any[] = []
+    args: unknown[] = []
   ): Promise<void> {
     const client = await this.getClient()
     
@@ -123,7 +123,7 @@ export class TemporalClient {
     }
   }
 
-  static async queryWorkflow(workflowId: string, queryName: string, args: any[] = []) {
+  static async queryWorkflow(workflowId: string, queryName: string, args: unknown[] = []) {
     const client = await this.getClient()
     
     const handle = client.workflow.getHandle(workflowId)
@@ -154,7 +154,7 @@ export class TemporalClient {
         workflowType: filters.workflowType ? { name: filters.workflowType } : undefined,
         startTime: filters.startTime ? { earliestTime: filters.startTime } : undefined,
         closeTime: filters.endTime ? { latestTime: filters.endTime } : undefined,
-        status: filters.status as any,
+        status: filters.status as 'RUNNING' | 'COMPLETED' | 'FAILED' | 'CANCELED' | 'TERMINATED' | 'CONTINUED_AS_NEW' | 'TIMED_OUT',
       } : undefined,
     })
 

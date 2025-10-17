@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { applicationApi } from "@/lib/api-client";
-import { getDaysUntilDeadline, isOverdue } from "@/lib/data/job-applications-data";
+import { getDaysUntilDeadline, isOverdue, type Application, type TimelineEvent } from "@/lib/data/job-applications-data";
 import { StatusBadge } from "@/components/features/status-badge";
 import { TimelineView } from "@/components/features/timeline-view";
 import { ApplicationForm } from "@/components/features/application-form";
@@ -36,8 +36,8 @@ interface ApplicationDetailProps {
 export function ApplicationDetail({ applicationId }: ApplicationDetailProps) {
   const [editFormOpen, setEditFormOpen] = useState(false);
   const [statusFormOpen, setStatusFormOpen] = useState(false);
-  const [application, setApplication] = useState<any | null>(null);
-  const [timelineEvents, setTimelineEvents] = useState<any[]>([]);
+  const [application, setApplication] = useState<Application | null>(null);
+  const [timelineEvents, setTimelineEvents] = useState<TimelineEvent[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -48,7 +48,7 @@ export function ApplicationDetail({ applicationId }: ApplicationDetailProps) {
       try {
         const res = await applicationApi.getApplication(applicationId);
         if (!res.success || !res.data) throw new Error(res.error || "Failed to load application");
-        const app = res.data as any;
+        const app = res.data as Application;
         const converted = {
           ...app,
           deadline: new Date(app.deadline),
@@ -60,7 +60,7 @@ export function ApplicationDetail({ applicationId }: ApplicationDetailProps) {
 
         const timelineRes = await applicationApi.getTimeline(applicationId);
         if (timelineRes.success && timelineRes.data) {
-          const events = (timelineRes.data as any[]).map((e) => ({
+          const events = (timelineRes.data as TimelineEvent[]).map((e) => ({
             ...e,
             timestamp: new Date(e.timestamp),
           }));
@@ -101,7 +101,7 @@ export function ApplicationDetail({ applicationId }: ApplicationDetailProps) {
       <div className="text-center py-12">
         <h2 className="text-2xl font-bold mb-2">Application Not Found</h2>
         <p className="text-muted-foreground mb-4">
-          The application you're looking for doesn't exist.
+          The application you&apos;re looking for doesn&apos;t exist.
         </p>
         <Link href="/">
           <Button>Back to Dashboard</Button>

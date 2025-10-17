@@ -1,4 +1,4 @@
-import { NextRequest, NextResponse } from 'next/server'
+import { NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 
 // GET /api/health/db - connectivity and basic read
@@ -21,7 +21,7 @@ export async function GET() {
 }
 
 // POST /api/health/db - smoke test write/read/delete
-export async function POST(request: NextRequest) {
+export async function POST() {
   try {
     const now = new Date()
     const uniqueSuffix = Math.random().toString(36).slice(2, 8)

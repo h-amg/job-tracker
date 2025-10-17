@@ -32,7 +32,7 @@ export class NotificationService {
   }
 
   static async getNotifications(applicationId?: string, unreadOnly = false) {
-    const where: any = {}
+    const where: Record<string, unknown> = {}
 
     if (applicationId) {
       where.applicationId = applicationId
@@ -65,7 +65,7 @@ export class NotificationService {
   }
 
   static async markAllAsRead(applicationId?: string) {
-    const where: any = { read: false }
+    const where: Record<string, unknown> = { read: false }
 
     if (applicationId) {
       where.applicationId = applicationId
@@ -78,7 +78,7 @@ export class NotificationService {
   }
 
   static async getUnreadCount(applicationId?: string) {
-    const where: any = { read: false }
+    const where: Record<string, unknown> = { read: false }
 
     if (applicationId) {
       where.applicationId = applicationId

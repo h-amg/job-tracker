@@ -1,7 +1,6 @@
-import { z } from 'zod'
 
 // API Response wrapper
-export interface ApiResponse<T = any> {
+export interface ApiResponse<T = unknown> {
   success: boolean
   data?: T
   error?: string
@@ -69,7 +68,7 @@ export class ApiClient {
     }
   }
 
-  async get<T>(endpoint: string, params?: Record<string, any>): Promise<ApiResponse<T>> {
+  async get<T>(endpoint: string, params?: Record<string, unknown>): Promise<ApiResponse<T>> {
     const qs = params
       ? Object.entries(params)
           .filter(([, value]) => value !== undefined && value !== null)
@@ -84,14 +83,14 @@ export class ApiClient {
     })
   }
 
-  async post<T>(endpoint: string, data?: any): Promise<ApiResponse<T>> {
+  async post<T>(endpoint: string, data?: unknown): Promise<ApiResponse<T>> {
     return this.request<T>(endpoint, {
       method: 'POST',
       body: data ? JSON.stringify(data) : undefined,
     })
   }
 
-  async put<T>(endpoint: string, data?: any): Promise<ApiResponse<T>> {
+  async put<T>(endpoint: string, data?: unknown): Promise<ApiResponse<T>> {
     return this.request<T>(endpoint, {
       method: 'PUT',
       body: data ? JSON.stringify(data) : undefined,
@@ -104,7 +103,7 @@ export class ApiClient {
     })
   }
 
-  async upload<T>(endpoint: string, file: File, additionalData?: Record<string, any>): Promise<ApiResponse<T>> {
+  async upload<T>(endpoint: string, file: File, additionalData?: Record<string, unknown>): Promise<ApiResponse<T>> {
     const formData = new FormData()
     formData.append('file', file)
     
@@ -140,10 +139,10 @@ export const applicationApi = {
   getApplication: (id: string) => apiClient.get(`/api/applications/${id}`),
 
   // Create application
-  createApplication: (data: any) => apiClient.post('/api/applications', data),
+  createApplication: (data: unknown) => apiClient.post('/api/applications', data),
 
   // Update application
-  updateApplication: (id: string, data: any) => apiClient.put(`/api/applications/${id}`, data),
+  updateApplication: (id: string, data: unknown) => apiClient.put(`/api/applications/${id}`, data),
 
   // Update application status
   updateStatus: (id: string, data: { status: string; notes?: string; interviewDate?: string }) =>
@@ -156,7 +155,7 @@ export const applicationApi = {
   getTimeline: (id: string) => apiClient.get(`/api/applications/${id}/timeline`),
 
   // Generate cover letter
-  generateCoverLetter: (id: string, data: any) =>
+  generateCoverLetter: (id: string, data: unknown) =>
     apiClient.post(`/api/applications/${id}/cover-letter`, data),
 
   // Get cover letter

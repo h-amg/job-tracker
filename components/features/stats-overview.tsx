@@ -17,9 +17,6 @@ interface StatsOverviewProps {
 
 export function StatsOverview({ applications }: StatsOverviewProps) {
   const stats = getApplicationStats(applications);
-  const activeApplications = applications.filter(
-    (app) => !["Rejected", "Withdrawn", "Archived"].includes(app.status)
-  );
 
   // Calculate success rate (offers / total non-archived)
   const nonArchivedCount = applications.filter(

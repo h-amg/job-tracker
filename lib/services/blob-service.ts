@@ -37,7 +37,6 @@ export class BlobService {
 
     // Generate unique filename
     const timestamp = Date.now()
-    const extension = filename.split('.').pop() || 'pdf'
     const uniqueFilename = `${folder}/${timestamp}-${filename.replace(/[^a-zA-Z0-9.-]/g, '_')}`
 
     try {
