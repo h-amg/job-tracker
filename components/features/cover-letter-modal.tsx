@@ -10,10 +10,15 @@ import {
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { CheckIcon, CopyIcon, FileTextIcon } from "lucide-react";
-import { type Application } from "@/lib/data/job-applications-data";
+// Define minimal application shape needed by this modal
+interface MinimalApplicationForCoverLetter {
+  role: string;
+  company: string;
+  location?: string;
+}
 
 interface CoverLetterModalProps {
-  application: Application;
+  application: MinimalApplicationForCoverLetter;
   open: boolean;
   onOpenChange: (open: boolean) => void;
 }

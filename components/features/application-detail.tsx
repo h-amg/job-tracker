@@ -1,13 +1,9 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import Link from "next/link";
-import {
-  mockApplications,
-  mockTimelineEvents,
-  getDaysUntilDeadline,
-  isOverdue,
-} from "@/lib/data/job-applications-data";
+import { applicationApi } from "@/lib/api-client";
+import { getDaysUntilDeadline, isOverdue } from "@/lib/data/job-applications-data";
 import { StatusBadge } from "@/components/features/status-badge";
 import { TimelineView } from "@/components/features/timeline-view";
 import { ApplicationForm } from "@/components/features/application-form";
@@ -40,14 +36,65 @@ interface ApplicationDetailProps {
 export function ApplicationDetail({ applicationId }: ApplicationDetailProps) {
   const [editFormOpen, setEditFormOpen] = useState(false);
   const [statusFormOpen, setStatusFormOpen] = useState(false);
+  const [application, setApplication] = useState<any | null>(null);
+  const [timelineEvents, setTimelineEvents] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
-  // Find application
-  const application = mockApplications.find((app) => app.id === applicationId);
+  useEffect(() => {
+    const load = async () => {
+      setLoading(true);
+      setError(null);
+      try {
+        const res = await applicationApi.getApplication(applicationId);
+        if (!res.success || !res.data) throw new Error(res.error || "Failed to load application");
+        const app = res.data as any;
+        const converted = {
+          ...app,
+          deadline: new Date(app.deadline),
+          createdAt: new Date(app.createdAt),
+          updatedAt: new Date(app.updatedAt),
+          interviewDate: app.interviewDate ? new Date(app.interviewDate) : undefined,
+        };
+        setApplication(converted);
 
-  // Get timeline events for this application
-  const timelineEvents = mockTimelineEvents.filter(
-    (event) => event.applicationId === applicationId
-  );
+        const timelineRes = await applicationApi.getTimeline(applicationId);
+        if (timelineRes.success && timelineRes.data) {
+          const events = (timelineRes.data as any[]).map((e) => ({
+            ...e,
+            timestamp: new Date(e.timestamp),
+          }));
+          setTimelineEvents(events);
+        } else {
+          setTimelineEvents([]);
+        }
+      } catch (e) {
+        setError(e instanceof Error ? e.message : "Failed to load application");
+      } finally {
+        setLoading(false);
+      }
+    };
+    load();
+  }, [applicationId]);
+
+  if (loading) {
+    return (
+      <div className="text-center py-12">
+        <p className="text-muted-foreground">Loading application...</p>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="text-center py-12">
+        <p className="text-red-500 mb-4">{error}</p>
+        <Link href="/">
+          <Button>Back to Dashboard</Button>
+        </Link>
+      </div>
+    );
+  }
 
   if (!application) {
     return (

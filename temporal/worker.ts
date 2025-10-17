@@ -1,15 +1,13 @@
-import { Worker } from '@temporalio/worker'
-import { Connection } from '@temporalio/client'
-import { fileURLToPath } from 'url'
-import { dirname } from 'path'
+import { Worker, NativeConnection } from '@temporalio/worker'
+import { fileURLToPath, pathToFileURL } from 'url'
 import * as activities from './activities/application-activities'
 import { ApplicationWorkflow, CoverLetterGenerationWorkflow } from './workflows/application-workflow'
 
 async function run() {
   console.log('Starting Temporal worker...')
 
-  // Create connection
-  const connection = await Connection.connect({
+  // Create native worker connection (NOT the client Connection)
+  const connection = await NativeConnection.connect({
     address: process.env.TEMPORAL_ADDRESS || 'localhost:7233',
     // For Temporal Cloud, you would add TLS configuration here
     // tls: {
@@ -25,7 +23,8 @@ async function run() {
     connection,
     namespace: process.env.TEMPORAL_NAMESPACE || 'default',
     taskQueue: 'application-task-queue',
-    workflowsPath: require.resolve('./workflows/application-workflow'),
+    // ESM-safe workflows path resolution
+    workflowsPath: fileURLToPath(new URL('./workflows/application-workflow.ts', import.meta.url)),
     activities,
     // Configure worker options
     maxConcurrentActivityTaskExecutions: 10,
@@ -72,10 +71,9 @@ process.on('unhandledRejection', (reason, promise) => {
   process.exit(1)
 })
 
-// Run the worker
-const __filename = fileURLToPath(import.meta.url)
-
-if (process.argv[1] === __filename) {
+// Run the worker (ESM-safe main module check)
+const isMainModule = import.meta.url === pathToFileURL(process.argv[1]).href
+if (isMainModule) {
   run().catch((error) => {
     console.error('Failed to start worker:', error)
     process.exit(1)

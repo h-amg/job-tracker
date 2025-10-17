@@ -1,11 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import {
-  type Application,
-  getDaysUntilDeadline,
-  isOverdue,
-} from "@/lib/data/job-applications-data";
+import { getDaysUntilDeadline, isOverdue } from "@/lib/data/job-applications-data";
 import { StatusBadge } from "@/components/features/status-badge";
 import { CoverLetterModal } from "@/components/features/cover-letter-modal";
 import { Button } from "@/components/ui/button";
@@ -21,7 +17,20 @@ import {
 import Link from "next/link";
 
 interface ApplicationCardProps {
-  application: Application;
+  application: {
+    id: string;
+    company: string;
+    role: string;
+    status: "Active" | "Interview" | "Offer" | "Rejected" | "Withdrawn" | "Archived";
+    deadline: Date;
+    createdAt: Date;
+    updatedAt: Date;
+    notes?: string;
+    interviewDate?: Date;
+    salary?: string;
+    location?: string;
+    jobType?: string;
+  };
   onStatusUpdate?: (id: string) => void;
   showActions?: boolean;
 }
