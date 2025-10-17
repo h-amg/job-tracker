@@ -2,7 +2,8 @@
 
 import { useState, useEffect, useCallback } from "react";
 import { ApplicationStatus } from "@prisma/client";
-import { applicationApi, useApiCall } from "@/lib/api-client";
+import { applicationApi, useApiCall, type ApiApplication } from "@/lib/api-client";
+import { type Application } from "@/lib/data/job-applications-data";
 import { StatsOverview } from "@/components/features/stats-overview";
 import { ReminderBanner } from "@/components/features/reminder-banner";
 import { ApplicationCard } from "@/components/features/application-card";
@@ -19,48 +20,8 @@ import {
 import { SearchIcon, FilterIcon, SortDescIcon, LoaderIcon } from "lucide-react";
 import { toast } from "sonner";
 
-// Type definitions for API responses
-interface Application {
-  id: string;
-  company: string;
-  role: string;
-  jobDescription: string;
-  resumeUrl?: string;
-  coverLetterUrl?: string;
-  status: ApplicationStatus;
-  deadline: string; // ISO string from API
-  createdAt: string;
-  updatedAt: string;
-  notes?: string;
-  interviewDate?: string;
-  salary?: string;
-  location?: string;
-  jobType?: string;
-  timelineEvents?: TimelineEvent[];
-  notifications?: Notification[];
-}
-
-interface TimelineEvent {
-  id: string;
-  applicationId: string;
-  status: ApplicationStatus;
-  note?: string;
-  timestamp: string;
-}
-
-interface Notification {
-  id: string;
-  applicationId: string;
-  type: string;
-  title: string;
-  message: string;
-  status: string;
-  timestamp: string;
-  read: boolean;
-}
-
 export function Dashboard() {
-  const [applications, setApplications] = useState<Application[]>([]);
+  const [applications, setApplications] = useState<ApiApplication[]>([]);
   const [searchQuery, setSearchQuery] = useState("");
   const [statusFilter, setStatusFilter] = useState<ApplicationStatus | "All">("All");
   const [sortBy, setSortBy] = useState<"deadline" | "created" | "updated">("deadline");
@@ -71,14 +32,9 @@ export function Dashboard() {
   const [error, setError] = useState<string | null>(null);
 
   // API call hooks
-  const { execute: fetchApplications } = useApiCall<Application[]>();
-  const { execute: createApplication, loading: createLoading } = useApiCall<Application>();
-  const { execute: updateStatus } = useApiCall<Application>();
-
-  // Fetch applications on component mount
-  useEffect(() => {
-    loadApplications();
-  }, [loadApplications]);
+  const { execute: fetchApplications } = useApiCall<ApiApplication[]>();
+  const { execute: createApplication, loading: createLoading } = useApiCall<ApiApplication>();
+  const { execute: updateStatus } = useApiCall<ApiApplication>();
 
   const loadApplications = useCallback(async () => {
     setLoading(true);
@@ -107,6 +63,11 @@ export function Dashboard() {
       setLoading(false);
     }
   }, [fetchApplications, statusFilter, searchQuery]);
+
+  // Fetch applications on component mount
+  useEffect(() => {
+    loadApplications();
+  }, [loadApplications]);
 
   // Filter applications (client-side filtering for better UX)
   const filteredApplications = applications.filter((app) => {
@@ -147,7 +108,13 @@ export function Dashboard() {
   const handleCreateApplication = async (data: Partial<Application>) => {
     try {
       await createApplication(async () => {
-        const response = await applicationApi.createApplication(data);
+        // Convert Date to string for API
+        const apiData = {
+          ...data,
+          deadline: data.deadline instanceof Date ? data.deadline.toISOString() : data.deadline,
+          interviewDate: data.interviewDate instanceof Date ? data.interviewDate.toISOString() : data.interviewDate,
+        };
+        const response = await applicationApi.createApplication(apiData);
         
         if (response.success && response.data) {
           setApplications(prev => [response.data!, ...prev]);
@@ -169,7 +136,13 @@ export function Dashboard() {
 
     try {
       await updateStatus(async () => {
-        const response = await applicationApi.updateStatus(selectedAppId, data);
+        // Convert Date to string for API
+        const apiData = {
+          status: data.status,
+          notes: data.notes,
+          interviewDate: data.interviewDate ? data.interviewDate.toISOString() : undefined,
+        };
+        const response = await applicationApi.updateStatus(selectedAppId, apiData);
         
         if (response.success && response.data) {
           setApplications(prev => 
@@ -194,8 +167,9 @@ export function Dashboard() {
   const selectedApp = applications.find((app) => app.id === selectedAppId);
 
   // Convert API data to match existing component expectations
-  const convertedApplications = applications.map(app => ({
+  const convertedApplications: Application[] = applications.map(app => ({
     ...app,
+    resumeLink: app.resumeUrl,
     deadline: new Date(app.deadline),
     createdAt: new Date(app.createdAt),
     updatedAt: new Date(app.updatedAt),
@@ -336,19 +310,23 @@ export function Dashboard() {
           </div>
         ) : (
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-            {sortedApplications.map((app) => (
-              <ApplicationCard
-                key={app.id}
-                application={{
-                  ...app,
-                  deadline: new Date(app.deadline),
-                  createdAt: new Date(app.createdAt),
-                  updatedAt: new Date(app.updatedAt),
-                  interviewDate: app.interviewDate ? new Date(app.interviewDate) : undefined,
-                }}
-                onStatusUpdate={handleStatusUpdate}
-              />
-            ))}
+            {sortedApplications.map((app) => {
+              const convertedApp: Application = {
+                ...app,
+                resumeLink: app.resumeUrl,
+                deadline: new Date(app.deadline),
+                createdAt: new Date(app.createdAt),
+                updatedAt: new Date(app.updatedAt),
+                interviewDate: app.interviewDate ? new Date(app.interviewDate) : undefined,
+              };
+              return (
+                <ApplicationCard
+                  key={app.id}
+                  application={convertedApp}
+                  onStatusUpdate={handleStatusUpdate}
+                />
+              );
+            })}
           </div>
         )}
       </div>
@@ -357,7 +335,7 @@ export function Dashboard() {
       <ApplicationForm
         open={formOpen}
         onOpenChange={setFormOpen}
-        onSubmit={handleCreateApplication}
+        onSubmit={handleCreateApplication as (data: Partial<Application>) => void}
         mode="create"
       />
 
@@ -365,6 +343,7 @@ export function Dashboard() {
         <ApplicationForm
           application={{
             ...selectedApp,
+            resumeLink: selectedApp.resumeUrl,
             deadline: new Date(selectedApp.deadline),
             createdAt: new Date(selectedApp.createdAt),
             updatedAt: new Date(selectedApp.updatedAt),
@@ -372,7 +351,7 @@ export function Dashboard() {
           }}
           open={statusFormOpen}
           onOpenChange={setStatusFormOpen}
-          onSubmit={handleStatusUpdateSubmit}
+          onSubmit={handleStatusUpdateSubmit as (data: Partial<Application>) => void}
           mode="status"
         />
       )}

@@ -126,6 +126,27 @@ export class ApiClient {
 // Create default API client instance
 export const apiClient = new ApiClient()
 
+// Type for API Application (with string dates and optional resumeUrl)
+export interface ApiApplication {
+  id: string
+  company: string
+  role: string
+  jobDescription: string
+  resumeUrl?: string
+  coverLetterUrl?: string
+  status: string
+  deadline: string
+  createdAt: string
+  updatedAt: string
+  notes?: string
+  interviewDate?: string
+  salary?: string
+  location?: string
+  jobType?: string
+  timelineEvents?: unknown[]
+  notifications?: unknown[]
+}
+
 // Application API methods
 export const applicationApi = {
   // Get all applications
@@ -133,33 +154,33 @@ export const applicationApi = {
     status?: string
     search?: string
     includeArchived?: boolean
-  }) => apiClient.get('/api/applications', filters),
+  }) => apiClient.get<ApiApplication[]>('/api/applications', filters),
 
   // Get single application
-  getApplication: (id: string) => apiClient.get(`/api/applications/${id}`),
+  getApplication: (id: string) => apiClient.get<ApiApplication>(`/api/applications/${id}`),
 
   // Create application
-  createApplication: (data: unknown) => apiClient.post('/api/applications', data),
+  createApplication: (data: unknown) => apiClient.post<ApiApplication>('/api/applications', data),
 
   // Update application
-  updateApplication: (id: string, data: unknown) => apiClient.put(`/api/applications/${id}`, data),
+  updateApplication: (id: string, data: unknown) => apiClient.put<ApiApplication>(`/api/applications/${id}`, data),
 
   // Update application status
   updateStatus: (id: string, data: { status: string; notes?: string; interviewDate?: string }) =>
-    apiClient.post(`/api/applications/${id}/status`, data),
+    apiClient.post<ApiApplication>(`/api/applications/${id}/status`, data),
 
   // Delete application
-  deleteApplication: (id: string) => apiClient.delete(`/api/applications/${id}`),
+  deleteApplication: (id: string) => apiClient.delete<void>(`/api/applications/${id}`),
 
   // Get application timeline
-  getTimeline: (id: string) => apiClient.get(`/api/applications/${id}/timeline`),
+  getTimeline: (id: string) => apiClient.get<unknown[]>(`/api/applications/${id}/timeline`),
 
   // Generate cover letter
   generateCoverLetter: (id: string, data: unknown) =>
-    apiClient.post(`/api/applications/${id}/cover-letter`, data),
+    apiClient.post<{ url: string }>(`/api/applications/${id}/cover-letter`, data),
 
   // Get cover letter
-  getCoverLetter: (id: string) => apiClient.get(`/api/applications/${id}/cover-letter`),
+  getCoverLetter: (id: string) => apiClient.get<{ url: string }>(`/api/applications/${id}/cover-letter`),
 }
 
 // Notification API methods

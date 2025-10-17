@@ -11,7 +11,7 @@ export interface Application {
   company: string;
   role: string;
   jobDescription: string;
-  resumeLink: string;
+  resumeLink?: string; // Made optional to match API response
   coverLetterLink?: string;
   status: ApplicationStatus;
   deadline: Date;
