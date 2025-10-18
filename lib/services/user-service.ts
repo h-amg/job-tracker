@@ -35,7 +35,12 @@ export class UserService {
         });
       }
       
-      return user;
+      return {
+        ...user,
+        name: user.name ?? undefined,
+        email: user.email ?? undefined,
+        phone: user.phone ?? undefined,
+      };
     } catch (error) {
       console.error("Error getting or creating user:", error);
       throw new Error("Failed to get or create user");
@@ -62,7 +67,12 @@ export class UserService {
         },
       });
 
-      return updatedUser;
+      return {
+        ...updatedUser,
+        name: updatedUser.name ?? undefined,
+        email: updatedUser.email ?? undefined,
+        phone: updatedUser.phone ?? undefined,
+      };
     } catch (error) {
       console.error("Error updating user:", error);
       throw new Error("Failed to update user profile");
@@ -78,7 +88,12 @@ export class UserService {
         where: { id },
       });
       
-      return user;
+      return user ? {
+        ...user,
+        name: user.name ?? undefined,
+        email: user.email ?? undefined,
+        phone: user.phone ?? undefined,
+      } : null;
     } catch (error) {
       console.error("Error getting user by ID:", error);
       throw new Error("Failed to get user");

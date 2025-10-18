@@ -5,6 +5,7 @@ import type {
   ToastActionElement,
   ToastProps,
 } from "@/components/ui/toast"
+import type { VariantProps } from "class-variance-authority"
 
 const TOAST_LIMIT = 1
 const TOAST_REMOVE_DELAY = 1000000
@@ -14,6 +15,7 @@ type ToasterToast = ToastProps & {
   title?: React.ReactNode
   description?: React.ReactNode
   action?: ToastActionElement
+  variant?: "default" | "destructive"
 }
 
 type ActionType = {
@@ -136,7 +138,12 @@ function dispatch(action: Action) {
   })
 }
 
-type Toast = Omit<ToasterToast, "id">
+type Toast = {
+  title?: string
+  description?: string
+  action?: ToastActionElement
+  variant?: "default" | "destructive"
+}
 
 function toast({ ...props }: Toast) {
   const id = genId()

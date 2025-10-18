@@ -11,11 +11,8 @@ import type { Application } from "@/lib/data/job-applications-data";
 
 // React Big Calendar
 import { Calendar, dateFnsLocalizer, type Event as RBCEvent } from "react-big-calendar";
-import format from "date-fns/format";
-import parse from "date-fns/parse";
-import startOfWeek from "date-fns/startOfWeek";
-import getDay from "date-fns/getDay";
-import enUS from "date-fns/locale/en-US";
+import { format, parse, startOfWeek, getDay } from "date-fns";
+import { enUS } from "date-fns/locale";
 import "react-big-calendar/lib/css/react-big-calendar.css";
 
 const locales = { "en-US": enUS } as const;
@@ -113,8 +110,8 @@ export function InterviewCalendar({ applications }: InterviewCalendarProps) {
               date={currentDate}
               onNavigate={setCurrentDate}
               style={{ height: 720, width: "100%" }}
-              onSelectEvent={(event) => router.push(`/application/${(event as InterviewEvent).applicationId}`)}
-              onSelectSlot={(slot) => handleDateSelect(slot.start as Date)}
+              onSelectEvent={(event: InterviewEvent) => router.push(`/application/${event.applicationId}`)}
+              onSelectSlot={(slot: { start: Date; end: Date }) => handleDateSelect(slot.start)}
               selectable
               eventPropGetter={() => {
                 return {

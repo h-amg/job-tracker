@@ -148,9 +148,7 @@ export function CalendarView({ applications }: CalendarViewProps) {
             onSelect={handleDateClick}
             modifiers={modifiers}
             modifiersClassNames={modifiersClassNames}
-            components={{
-              DayContent,
-            }}
+            components={{}}
             className="w-full"
             classNames={{
               // Make the calendar consume available width
