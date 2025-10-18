@@ -17,6 +17,7 @@ import {
 } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { ApplicationDetailSkeleton } from "@/components/features/skeleton-components";
 import {
   ArrowLeftIcon,
@@ -32,6 +33,7 @@ import {
   Loader2Icon,
   CopyIcon,
   CheckIcon,
+  ChevronDownIcon,
 } from "lucide-react";
 
 interface ApplicationDetailProps {
@@ -56,6 +58,25 @@ export function ApplicationDetail({ applicationId }: ApplicationDetailProps) {
   // Form submission state
   const [isUpdating, setIsUpdating] = useState(false);
   const [isUpdatingStatus, setIsUpdatingStatus] = useState(false);
+  
+  // Timeline collapsible state
+  const [timelineOpen, setTimelineOpen] = useState(false);
+  
+  // Details collapsible state
+  const [detailsOpen, setDetailsOpen] = useState(true);
+  
+  // Auto-expand/collapse behavior: when one is collapsed, the other expands
+  useEffect(() => {
+    if (!timelineOpen) {
+      setDetailsOpen(true);
+    }
+  }, [timelineOpen]);
+  
+  useEffect(() => {
+    if (!detailsOpen) {
+      setTimelineOpen(true);
+    }
+  }, [detailsOpen]);
   
 
   useEffect(() => {
@@ -379,7 +400,7 @@ export function ApplicationDetail({ applicationId }: ApplicationDetailProps) {
                 </TabsList>
                 
                 <TabsContent value="job-description" className="mt-4">
-                  <div className="max-h-96 overflow-y-auto text-muted-foreground whitespace-pre-wrap">
+                  <div className="max-h-[442px] overflow-y-auto text-muted-foreground whitespace-pre-wrap">
                     {application.jobDescription}
                   </div>
                 </TabsContent>
@@ -419,7 +440,7 @@ export function ApplicationDetail({ applicationId }: ApplicationDetailProps) {
                           )}
                         </Button>
                       </div>
-                      <div className="max-h-96 overflow-y-auto text-muted-foreground whitespace-pre-wrap">
+                      <div className="max-h-[442px] overflow-y-auto text-muted-foreground whitespace-pre-wrap">
                         {coverLetterContent}
                       </div>
                     </div>
@@ -434,44 +455,52 @@ export function ApplicationDetail({ applicationId }: ApplicationDetailProps) {
               </Tabs>
             </CardContent>
           </Card>
-
-          {/* Timeline */}
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <ClockIcon className="h-5 w-5" />
-                Application Timeline
-              </CardTitle>
-              <CardDescription>
-                Track the progress of your application
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              <TimelineView events={timelineEvents} />
-            </CardContent>
-          </Card>
-
-          {/* Notes */}
-          {application.notes && (
-            <Card>
-              <CardHeader>
-                <CardTitle>Notes</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <p className="text-muted-foreground">{application.notes}</p>
-              </CardContent>
-            </Card>
-          )}
         </div>
 
         {/* Sidebar */}
         <div className="space-y-6">
+          {/* Application Timeline */}
+          <Card>
+            <Collapsible open={timelineOpen} onOpenChange={setTimelineOpen}>
+              <CollapsibleTrigger asChild>
+                <CardHeader className="cursor-pointer hover:bg-muted/50 transition-colors">
+                  <CardTitle className="flex items-center justify-between">
+                    <div className="flex items-center gap-2">
+                      <ClockIcon className="h-5 w-5" />
+                      Application Timeline
+                    </div>
+                    <ChevronDownIcon className={`h-4 w-4 transition-transform ${timelineOpen ? 'rotate-180' : ''}`} />
+                  </CardTitle>
+                  <CardDescription>
+                    Track the progress of your application
+                  </CardDescription>
+                </CardHeader>
+              </CollapsibleTrigger>
+              <CollapsibleContent>
+                <CardContent>
+                  <div className="max-h-96 overflow-y-auto px-1">
+                    <TimelineView events={timelineEvents} />
+                  </div>
+                </CardContent>
+              </CollapsibleContent>
+            </Collapsible>
+          </Card>
+
           {/* Key Details */}
           <Card>
-            <CardHeader>
-              <CardTitle>Details</CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-4">
+            <Collapsible open={detailsOpen} onOpenChange={setDetailsOpen}>
+              <CollapsibleTrigger asChild>
+                <CardHeader className="cursor-pointer hover:bg-muted/50 transition-colors">
+                  <CardTitle className="flex items-center justify-between">
+                    <div className="flex items-center gap-2">
+                      Details
+                    </div>
+                    <ChevronDownIcon className={`h-4 w-4 transition-transform ${detailsOpen ? 'rotate-180' : ''}`} />
+                  </CardTitle>
+                </CardHeader>
+              </CollapsibleTrigger>
+              <CollapsibleContent>
+                <CardContent className="space-y-4">
               {/* Status */}
               <div className="flex items-start gap-3">
                 <div className="h-5 w-5 flex-shrink-0 mt-0.5 flex items-center justify-center">
@@ -645,29 +674,14 @@ export function ApplicationDetail({ applicationId }: ApplicationDetailProps) {
 
               <Separator />
 
-              {/* Notes */}
-              {application.notes && (
-                <>
-                  <div className="flex items-start gap-3">
-                    <FileTextIcon className="h-5 w-5 text-muted-foreground flex-shrink-0 mt-0.5" />
-
-                    <div className="flex-1 min-w-0">
-                      <p className="text-sm font-medium">Notes</p>
-                      <p className="text-sm text-muted-foreground whitespace-pre-wrap">
-                        {application.notes}
-                      </p>
-                    </div>
-                  </div>
-                  <Separator />
-                </>
-              )}
-
               {/* Dates */}
               <div className="space-y-2 text-xs text-muted-foreground">
                 <p>Created: {application.createdAt.toLocaleDateString()}</p>
                 <p>Updated: {application.updatedAt.toLocaleDateString()}</p>
               </div>
-            </CardContent>
+                </CardContent>
+              </CollapsibleContent>
+            </Collapsible>
           </Card>
 
         </div>
