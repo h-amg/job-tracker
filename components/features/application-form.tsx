@@ -25,6 +25,8 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { Separator } from "@/components/ui/separator";
+import { DatePicker } from "@/components/ui/date-picker";
+import { DateTimePicker } from "@/components/ui/date-time-picker";
 import {
   CalendarIcon,
   BuildingIcon,
@@ -224,14 +226,14 @@ export function ApplicationForm({
               {formData.status === "Interview" && (
                 <div className="space-y-2">
                   <Label htmlFor="interviewDate">
-                    Interview Date (Optional)
+                    Interview Date & Time (Optional)
                   </Label>
-                  <Input
-                    id="interviewDate"
-                    type="datetime-local"
-                    onChange={(e) =>
-                      handleChange("interviewDate", new Date(e.target.value))
-                    }
+                  <DateTimePicker
+                    value={formData.interviewDate}
+                    onChange={(date) => handleChange("interviewDate", date || new Date())}
+                    placeholder="Select interview date and time"
+                    showTime={true}
+                    fromDate={new Date()}
                   />
                 </div>
               )}
@@ -406,19 +408,12 @@ export function ApplicationForm({
                   <CalendarIcon className="h-4 w-4 inline mr-2" />
                   Application Deadline *
                 </Label>
-                <Input
-                  id="deadline"
-                  type="date"
-                  value={
-                    formData.deadline instanceof Date
-                      ? formData.deadline.toISOString().split("T")[0]
-                      : ""
-                  }
-                  onChange={(e) =>
-                    handleChange("deadline", new Date(e.target.value))
-                  }
-                  required
+                <DatePicker
+                  value={formData.deadline}
+                  onChange={(date) => handleChange("deadline", date || new Date())}
+                  placeholder="Select deadline"
                   disabled={!areFieldsEnabled}
+                  fromDate={new Date()}
                 />
 
                 <p className="text-xs text-muted-foreground">
