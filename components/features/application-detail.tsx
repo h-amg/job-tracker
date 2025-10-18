@@ -500,7 +500,7 @@ export function ApplicationDetail({ applicationId }: ApplicationDetailProps) {
                 </CardHeader>
               </CollapsibleTrigger>
               <CollapsibleContent>
-                <CardContent className="space-y-4">
+                <CardContent className="space-y-4 max-h-[380px] overflow-y-auto">
               {/* Status */}
               <div className="flex items-start gap-3">
                 <div className="h-5 w-5 flex-shrink-0 mt-0.5 flex items-center justify-center">
