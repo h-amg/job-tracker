@@ -84,30 +84,38 @@ export function ApplicationDetail({ applicationId }: ApplicationDetailProps) {
   }, [applicationId]);
 
   if (loading) {
-    return <ApplicationDetailSkeleton />;
+    return (
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <ApplicationDetailSkeleton />
+      </div>
+    );
   }
 
   if (error) {
     return (
-      <div className="text-center py-12">
-        <p className="text-red-500 mb-4">{error}</p>
-        <Link href="/">
-          <Button>Back to Dashboard</Button>
-        </Link>
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div className="text-center py-12">
+          <p className="text-red-500 mb-4">{error}</p>
+          <Link href="/">
+            <Button>Back to Dashboard</Button>
+          </Link>
+        </div>
       </div>
     );
   }
 
   if (!application) {
     return (
-      <div className="text-center py-12">
-        <h2 className="text-2xl font-bold mb-2">Application Not Found</h2>
-        <p className="text-muted-foreground mb-4">
-          The application you&apos;re looking for doesn&apos;t exist.
-        </p>
-        <Link href="/">
-          <Button>Back to Dashboard</Button>
-        </Link>
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div className="text-center py-12">
+          <h2 className="text-2xl font-bold mb-2">Application Not Found</h2>
+          <p className="text-muted-foreground mb-4">
+            The application you&apos;re looking for doesn&apos;t exist.
+          </p>
+          <Link href="/">
+            <Button>Back to Dashboard</Button>
+          </Link>
+        </div>
       </div>
     );
   }
@@ -116,14 +124,15 @@ export function ApplicationDetail({ applicationId }: ApplicationDetailProps) {
   const deadlineOverdue = isOverdue(application.deadline);
 
   return (
-    <div className="space-y-6">
-      {/* Back Button */}
-      <Link href="/">
-        <Button variant="ghost" size="sm" className="gap-2">
-          <ArrowLeftIcon className="h-4 w-4" />
-          Back to Dashboard
-        </Button>
-      </Link>
+    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+      <div className="space-y-6">
+        {/* Back Button */}
+        <Link href="/">
+          <Button variant="ghost" size="sm" className="gap-2">
+            <ArrowLeftIcon className="h-4 w-4" />
+            Back to Dashboard
+          </Button>
+        </Link>
 
       {/* Header */}
       <div className="flex flex-col md:flex-row md:items-start md:justify-between gap-4">
@@ -416,6 +425,7 @@ export function ApplicationDetail({ applicationId }: ApplicationDetailProps) {
         onSubmit={(data) => console.log("Status update:", data)}
         mode="status"
       />
+      </div>
     </div>
   );
 }

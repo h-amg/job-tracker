@@ -310,14 +310,15 @@ export function Dashboard() {
 
   if (loading) {
     return (
-      <div className="space-y-8">
-        {/* Page Header */}
-        <div>
-          <h1 className="text-3xl font-bold mb-2">Dashboard</h1>
-          <p className="text-muted-foreground">
-            Track and manage your job applications in one place
-          </p>
-        </div>
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div className="space-y-8">
+          {/* Page Header */}
+          <div>
+            <h1 className="text-3xl font-bold mb-2">Dashboard</h1>
+            <p className="text-muted-foreground">
+              Track and manage your job applications in one place
+            </p>
+          </div>
 
         {/* Statistics Skeleton */}
         <StatsOverviewSkeleton />
@@ -340,28 +341,32 @@ export function Dashboard() {
             ))}
           </div>
         </div>
+        </div>
       </div>
     );
   }
 
   if (error) {
     return (
-      <div className="text-center py-12">
-        <p className="text-red-500 mb-4">{error}</p>
-        <Button onClick={() => loadApplications()}>Try Again</Button>
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div className="text-center py-12">
+          <p className="text-red-500 mb-4">{error}</p>
+          <Button onClick={() => loadApplications()}>Try Again</Button>
+        </div>
       </div>
     );
   }
 
   return (
-    <div className="space-y-8">
-      {/* Page Header */}
-      <div>
-        <h1 className="text-3xl font-bold mb-2">Dashboard</h1>
-        <p className="text-muted-foreground">
-          Track and manage your job applications in one place
-        </p>
-      </div>
+    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+      <div className="space-y-8">
+        {/* Page Header */}
+        <div>
+          <h1 className="text-3xl font-bold mb-2">Dashboard</h1>
+          <p className="text-muted-foreground">
+            Track and manage your job applications in one place
+          </p>
+        </div>
 
       {/* Statistics */}
       <StatsOverview 
@@ -532,6 +537,7 @@ export function Dashboard() {
           loading={updatingApplications.has(selectedAppId || '')}
         />
       )}
+      </div>
     </div>
   );
 }

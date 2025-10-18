@@ -138,17 +138,18 @@ export function Archived() {
 
   if (loading) {
     return (
-      <div className="space-y-8">
-        {/* Page Header */}
-        <div>
-          <div className="flex items-center gap-3 mb-2">
-            <ArchiveIcon className="h-8 w-8 text-muted-foreground" />
-            <h1 className="text-3xl font-bold">Archived Applications</h1>
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div className="space-y-8">
+          {/* Page Header */}
+          <div>
+            <div className="flex items-center gap-3 mb-2">
+              <ArchiveIcon className="h-8 w-8 text-muted-foreground" />
+              <h1 className="text-3xl font-bold">Archived Applications</h1>
+            </div>
+            <p className="text-muted-foreground">
+              Applications that have been automatically archived or manually closed
+            </p>
           </div>
-          <p className="text-muted-foreground">
-            Applications that have been automatically archived or manually closed
-          </p>
-        </div>
 
         {/* Search Skeleton */}
         <div className="bg-card border border-border rounded-lg p-4">
@@ -166,48 +167,52 @@ export function Archived() {
             ))}
           </div>
         </div>
+        </div>
       </div>
     );
   }
 
   if (error) {
     return (
-      <div className="space-y-8">
-        {/* Page Header */}
-        <div>
-          <div className="flex items-center gap-3 mb-2">
-            <ArchiveIcon className="h-8 w-8 text-muted-foreground" />
-            <h1 className="text-3xl font-bold">Archived Applications</h1>
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div className="space-y-8">
+          {/* Page Header */}
+          <div>
+            <div className="flex items-center gap-3 mb-2">
+              <ArchiveIcon className="h-8 w-8 text-muted-foreground" />
+              <h1 className="text-3xl font-bold">Archived Applications</h1>
+            </div>
+            <p className="text-muted-foreground">
+              Applications that have been automatically archived or manually closed
+            </p>
           </div>
-          <p className="text-muted-foreground">
-            Applications that have been automatically archived or manually closed
-          </p>
-        </div>
 
-        {/* Error State */}
-        <div className="text-center py-12 bg-card border border-border rounded-lg">
-          <p className="text-red-500 mb-4">{error}</p>
-          <Button onClick={() => loadArchivedApplications(1, false)}>
-            Try Again
-          </Button>
+          {/* Error State */}
+          <div className="text-center py-12 bg-card border border-border rounded-lg">
+            <p className="text-red-500 mb-4">{error}</p>
+            <Button onClick={() => loadArchivedApplications(1, false)}>
+              Try Again
+            </Button>
+          </div>
         </div>
       </div>
     );
   }
 
   return (
-    <div className="space-y-8">
-      {/* Page Header */}
-      <div>
-        <div className="flex items-center gap-3 mb-2">
-          <ArchiveIcon className="h-8 w-8 text-muted-foreground" />
+    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+      <div className="space-y-8">
+        {/* Page Header */}
+        <div>
+          <div className="flex items-center gap-3 mb-2">
+            <ArchiveIcon className="h-8 w-8 text-muted-foreground" />
 
-          <h1 className="text-3xl font-bold">Archived Applications</h1>
+            <h1 className="text-3xl font-bold">Archived Applications</h1>
+          </div>
+          <p className="text-muted-foreground">
+            Applications that have been automatically archived or manually closed
+          </p>
         </div>
-        <p className="text-muted-foreground">
-          Applications that have been automatically archived or manually closed
-        </p>
-      </div>
 
       {/* Search */}
       <div className="bg-card border border-border rounded-lg p-4">
@@ -291,6 +296,7 @@ export function Archived() {
             </div>
           </>
         )}
+      </div>
       </div>
     </div>
   );
