@@ -31,7 +31,11 @@ import {
   FileTextIcon,
   UploadIcon,
   LoaderIcon,
+  CheckIcon,
+  XIcon,
 } from "lucide-react";
+import { uploadApi } from "@/lib/api-client";
+import { toast } from "sonner";
 
 interface ApplicationFormProps {
   application?: Application;
@@ -59,9 +63,14 @@ export function ApplicationForm({
     salary: application?.salary || "",
     status: application?.status || "Active",
     notes: application?.notes || "",
+    resumeUrl: application?.resumeUrl || "",
     deadline:
       application?.deadline || new Date(Date.now() + 28 * 24 * 60 * 60 * 1000), // 4 weeks default
   });
+
+  // File upload state
+  const [uploadLoading, setUploadLoading] = useState(false);
+  const [uploadedFileName, setUploadedFileName] = useState<string | null>(null);
 
   // Clear form data when dialog closes (for create mode)
   useEffect(() => {
@@ -75,8 +84,10 @@ export function ApplicationForm({
         salary: "",
         status: "Active",
         notes: "",
+        resumeUrl: "",
         deadline: new Date(Date.now() + 28 * 24 * 60 * 60 * 1000), // 4 weeks default
       });
+      setUploadedFileName(null);
     }
   }, [open, mode]);
 
@@ -88,6 +99,59 @@ export function ApplicationForm({
 
   const handleChange = (field: keyof Application, value: string | Date | ApplicationStatus) => {
     setFormData((prev) => ({ ...prev, [field]: value }));
+  };
+
+  const handleFileUpload = async (file: File) => {
+    // Validate file type
+    const allowedTypes = ['application/msword', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document'];
+    if (!allowedTypes.includes(file.type)) {
+      toast.error('Please upload only DOC or DOCX files');
+      return;
+    }
+
+    // Validate file size (10MB limit)
+    const maxSize = 10 * 1024 * 1024; // 10MB
+    if (file.size > maxSize) {
+      toast.error('File size must be less than 10MB');
+      return;
+    }
+
+    setUploadLoading(true);
+    
+    try {
+      const response = await uploadApi.uploadFile(file, 'resume');
+      
+      if (response.success && response.data) {
+        const uploadData = response.data as { url: string; filename: string; size: number; contentType: string };
+        setFormData(prev => ({ ...prev, resumeUrl: uploadData.url }));
+        setUploadedFileName(file.name);
+        toast.success('Resume uploaded successfully');
+      } else {
+        throw new Error(response.error || 'Upload failed');
+      }
+    } catch (error) {
+      console.error('Upload error:', error);
+      toast.error(error instanceof Error ? error.message : 'Failed to upload resume');
+    } finally {
+      setUploadLoading(false);
+    }
+  };
+
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      handleFileUpload(file);
+    }
+  };
+
+  const handleRemoveFile = () => {
+    setFormData(prev => ({ ...prev, resumeUrl: "" }));
+    setUploadedFileName(null);
+    // Clear the file input
+    const fileInput = document.getElementById('resume') as HTMLInputElement;
+    if (fileInput) {
+      fileInput.value = '';
+    }
   };
 
   // Status update mode - simplified form
@@ -307,7 +371,7 @@ export function ApplicationForm({
               </p>
             </div>
 
-            {/* Resume Upload (placeholder) */}
+            {/* Resume Upload */}
             <div className="space-y-2">
               <Label htmlFor="resume">
                 <UploadIcon className="h-4 w-4 inline mr-2" />
@@ -317,12 +381,37 @@ export function ApplicationForm({
                 <Input
                   id="resume"
                   type="file"
-                  accept=".pdf,.doc,.docx"
+                  accept=".doc,.docx"
                   className="flex-1"
+                  onChange={handleFileChange}
+                  disabled={uploadLoading}
                 />
+                {uploadedFileName && (
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    onClick={handleRemoveFile}
+                    disabled={uploadLoading}
+                  >
+                    <XIcon className="h-4 w-4" />
+                  </Button>
+                )}
               </div>
+              {uploadLoading && (
+                <div className="flex items-center gap-2 text-sm text-blue-600">
+                  <LoaderIcon className="h-4 w-4 animate-spin" />
+                  Uploading...
+                </div>
+              )}
+              {uploadedFileName && !uploadLoading && (
+                <div className="flex items-center gap-2 text-sm text-green-600">
+                  <CheckIcon className="h-4 w-4" />
+                  {uploadedFileName}
+                </div>
+              )}
               <p className="text-xs text-muted-foreground">
-                Upload your resume (PDF, DOC, DOCX)
+                Upload your resume (DOC, DOCX only)
               </p>
             </div>
 

@@ -181,6 +181,7 @@ export function Dashboard() {
           ...data,
           deadline: data.deadline instanceof Date ? data.deadline.toISOString() : data.deadline,
           interviewDate: data.interviewDate instanceof Date ? data.interviewDate.toISOString() : data.interviewDate,
+          resumeUrl: data.resumeUrl, // Ensure resumeUrl is passed to API
         };
         const response = await applicationApi.createApplication(apiData);
         
