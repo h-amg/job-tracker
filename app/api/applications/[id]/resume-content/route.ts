@@ -111,7 +111,7 @@ export async function GET(
         message: 'Resume extraction started',
       })
       } catch (workflowError) {
-        // Failed to start resume extraction workflow
+        console.error('Failed to start resume extraction workflow:', workflowError)
       
       // Update status to Failed
       await ApplicationService.updateResumeExtractionStatus(

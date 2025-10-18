@@ -78,7 +78,7 @@ export async function PUT(request: NextRequest, { params }: RouteParams) {
           await ApplicationService.setWorkflowId(params.id, null)
         }
       } catch (signalError) {
-        // Failed to signal workflow about deadline change
+        console.error('Failed to signal workflow about deadline change:', signalError)
       }
     }
 
@@ -140,7 +140,7 @@ export async function DELETE(request: NextRequest, { params }: RouteParams) {
           // Workflow not found, continuing with deletion
         }
       } catch (workflowError) {
-        // Failed to cancel workflow
+        console.error('Failed to cancel workflow:', workflowError)
       }
     }
 

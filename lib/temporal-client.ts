@@ -62,6 +62,7 @@ export class TemporalClient {
       // If a workflow with the same ID is already running, return a handle to it (idempotent start)
       const error = err as { name?: string }
       if (error && (error.name === 'WorkflowExecutionAlreadyStartedError' || String(err).includes('Workflow execution already started'))) {
+        console.warn(`Workflow ${workflowId} already started, returning existing handle`)
         return client.workflow.getHandle(workflowId)
       }
       throw err
@@ -100,6 +101,7 @@ export class TemporalClient {
     // Check if workflow exists before signaling
     const exists = await this.workflowExists(workflowId)
     if (!exists) {
+      console.warn(`Workflow ${workflowId} not found, skipping signal`)
       return false
     }
     
@@ -111,6 +113,7 @@ export class TemporalClient {
     // Check if workflow exists before signaling
     const exists = await this.workflowExists(workflowId)
     if (!exists) {
+      console.warn(`Workflow ${workflowId} not found, skipping extendDeadline signal`)
       return false
     }
     
@@ -122,6 +125,7 @@ export class TemporalClient {
     // Check if workflow exists before cancelling
     const exists = await this.workflowExists(workflowId)
     if (!exists) {
+      console.warn(`Workflow ${workflowId} not found, skipping cancellation`)
       return false
     }
     
@@ -232,6 +236,7 @@ export class TemporalClient {
     } catch (err: unknown) {
       const error = err as { name?: string }
       if (error && (error.name === 'WorkflowExecutionAlreadyStartedError' || String(err).includes('Workflow execution already started'))) {
+        console.warn(`Resume extraction workflow ${workflowId} already started, returning existing handle`)
         return client.workflow.getHandle(workflowId)
       }
       throw err
@@ -262,6 +267,7 @@ export class TemporalClient {
     } catch (err: unknown) {
       const error = err as { name?: string }
       if (error && (error.name === 'WorkflowExecutionAlreadyStartedError' || String(err).includes('Workflow execution already started'))) {
+        console.warn(`Cover letter workflow ${workflowId} already started, returning existing handle`)
         return client.workflow.getHandle(workflowId)
       }
       throw err

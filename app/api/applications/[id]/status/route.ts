@@ -46,7 +46,7 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
           await ApplicationService.setWorkflowId(params.id, null)
         }
       } catch (signalError) {
-        // Failed to signal workflow
+        console.error('Failed to signal workflow:', signalError)
       }
     }
 
