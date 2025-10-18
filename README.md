@@ -8,7 +8,7 @@ A comprehensive job application management system built with Next.js, Temporal w
 - **Automated Workflows**: Temporal-powered workflows handle reminders, archiving, and notifications
 - **AI-Powered Resume Processing**: Extract text from uploaded resumes automatically
 - **Cover Letter Generation**: Generate personalized cover letters using OpenAI
-- **Real-time Notifications**: In-app notification system with streaming updates
+- **Real-time Notifications**: In-app notification system with client-side polling for live updates
 - **Timeline Tracking**: Visual timeline of application status changes
 - **File Storage**: Secure cloud storage for resumes and cover letters
 
@@ -17,7 +17,7 @@ A comprehensive job application management system built with Next.js, Temporal w
 ### User Experience Principles
 - **Minimalist Interface**: Clean, intuitive design that's easy to understand and navigate
 - **Performance-First**: Infinite scrolling for seamless browsing without pagination delays
-- **Real-time Updates**: Live notifications for cover letter completion and deadline reminders
+- **Real-time Updates**: Live notifications for cover letter completion and deadline reminders via client-side polling
 - **Progressive Enhancement**: Resume uploads start immediately while form is being filled
 
 ### Key Design Decisions
@@ -205,6 +205,13 @@ When you update application status:
 - Durable execution state
 - Full workflow history tracking
 
+### 5. Notification System
+The application uses client-side polling for real-time notifications:
+- Client polls `/api/notifications` every 5 seconds for updates
+- Notifications are created by Temporal workflows and stored in the database
+- Real-time updates for cover letter generation, deadline reminders, and status changes
+- Efficient polling with automatic reconnection on connection loss
+
 ## 🛠️ Development
 
 ### Available Scripts
@@ -278,7 +285,6 @@ temporal workflow signal --workflow-id <workflow-id> --name updateStatus --input
 
 ### Notifications
 - `GET /api/notifications` - List notifications
-- `GET /api/notifications/stream` - Stream notifications
 
 ## 🚀 Deployment
 
