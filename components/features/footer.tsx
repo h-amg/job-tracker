@@ -8,19 +8,22 @@ export function Footer() {
           <p>© 2024 JobTracker. Track your job applications efficiently.</p>
           <div className="flex items-center gap-4">
             <Link
-              href="/about"
+              // eslint-disable-next-line @typescript-eslint/no-explicit-any
+              href={"/about" as any}
               className="hover:text-foreground transition-colors"
             >
               About
             </Link>
             <Link
-              href="/privacy"
+              // eslint-disable-next-line @typescript-eslint/no-explicit-any
+              href={"/privacy" as any}
               className="hover:text-foreground transition-colors"
             >
               Privacy
             </Link>
             <Link
-              href="/help"
+              // eslint-disable-next-line @typescript-eslint/no-explicit-any
+              href={"/help" as any}
               className="hover:text-foreground transition-colors"
             >
               Help

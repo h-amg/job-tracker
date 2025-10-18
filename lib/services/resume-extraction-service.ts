@@ -69,7 +69,7 @@ export class ResumeExtractionService {
       case 'docx':
         return await this.extractTextFromDocx(buffer)
       case 'doc':
-        return await this.extractTextFromDoc(buffer)
+        return await this.extractTextFromDoc()
       case 'txt':
         return buffer.toString('utf-8').trim()
       case 'pdf':

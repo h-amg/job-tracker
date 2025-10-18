@@ -38,13 +38,6 @@ export function CoverLetterModal({
   const [error, setError] = useState<string | null>(null);
   const [notFound, setNotFound] = useState(false);
 
-  // Fetch cover letter from API when modal opens
-  useEffect(() => {
-    if (open && application.id) {
-      fetchCoverLetter();
-    }
-  }, [open, application.id, fetchCoverLetter]);
-
   const fetchCoverLetter = useCallback(async () => {
     setIsLoading(true);
     setError(null);
@@ -76,6 +69,13 @@ export function CoverLetterModal({
       setIsLoading(false);
     }
   }, [application.id]);
+
+  // Fetch cover letter from API when modal opens
+  useEffect(() => {
+    if (open && application.id) {
+      fetchCoverLetter();
+    }
+  }, [open, application.id, fetchCoverLetter]);
 
   const handleCopy = async () => {
     try {

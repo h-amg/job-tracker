@@ -207,7 +207,11 @@ export function ApplicationDetail({ applicationId }: ApplicationDetailProps) {
     
     setIsUpdatingStatus(true);
     try {
-      const response = await applicationApi.updateStatus(applicationId, data);
+      const response = await applicationApi.updateStatus(applicationId, {
+        status: data.status,
+        notes: data.notes,
+        interviewDate: data.interviewDate ? data.interviewDate.toISOString() : undefined,
+      });
       
       if (response.success && response.data) {
         // Update local state with the new data
@@ -245,6 +249,17 @@ export function ApplicationDetail({ applicationId }: ApplicationDetailProps) {
     } finally {
       setIsUpdatingStatus(false);
     }
+  };
+
+  // Handle status update with proper signature for ApplicationForm
+  const handleStatusUpdateForForm = async (data: Partial<Application>) => {
+    if (!data.status) return;
+    
+    await handleStatusUpdate({
+      status: data.status as ApplicationStatus,
+      notes: data.notes,
+      interviewDate: data.interviewDate,
+    });
   };
 
   if (loading) {
@@ -701,7 +716,7 @@ export function ApplicationDetail({ applicationId }: ApplicationDetailProps) {
         application={application}
         open={statusFormOpen}
         onOpenChange={setStatusFormOpen}
-        onSubmit={handleStatusUpdate}
+        onSubmit={handleStatusUpdateForForm}
         mode="status"
         loading={isUpdatingStatus}
       />

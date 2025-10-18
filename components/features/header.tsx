@@ -85,7 +85,9 @@ export function Header({ onAddApplication }: HeaderProps) {
             {navItems.map((item) => {
               const Icon = item.icon;
               return (
-                <Link key={item.path} href={item.path}>
+                <Link key={item.path} 
+                  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+                  href={item.path as any}>
                   <Button
                     variant={isActive(item.path) ? "secondary" : "ghost"}
                     size="sm"
@@ -127,7 +129,9 @@ export function Header({ onAddApplication }: HeaderProps) {
           {navItems.map((item) => {
             const Icon = item.icon;
             return (
-              <Link key={item.path} href={item.path}>
+              <Link key={item.path} 
+                // eslint-disable-next-line @typescript-eslint/no-explicit-any
+                href={item.path as any}>
                 <Button
                   variant={isActive(item.path) ? "secondary" : "ghost"}
                   size="sm"

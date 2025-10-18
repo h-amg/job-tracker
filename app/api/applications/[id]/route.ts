@@ -131,8 +131,7 @@ export async function DELETE(request: NextRequest, { params }: RouteParams) {
     if (existingApplication.workflowId) {
       try {
         const workflowCancelled = await TemporalClient.cancelWorkflow(
-          existingApplication.workflowId,
-          'Application deleted by user'
+          existingApplication.workflowId
         )
         
         // If workflow doesn't exist, just log it (we're deleting the app anyway)

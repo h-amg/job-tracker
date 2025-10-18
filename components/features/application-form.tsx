@@ -96,12 +96,31 @@ export function ApplicationForm({
     }
   }, [open, mode]);
 
+  // Initialize form data when dialog opens (for edit/status modes)
+  useEffect(() => {
+    if (open && application && (mode === "edit" || mode === "status")) {
+      setFormData({
+        company: application.company || "",
+        role: application.role || "",
+        jobDescription: application.jobDescription || "",
+        location: application.location || "",
+        jobType: application.jobType || "Full-time",
+        salary: application.salary || "",
+        status: application.status || "Active",
+        notes: application.notes || "",
+        resumeUrl: application.resumeUrl || "",
+        deadline: application.deadline || new Date(Date.now() + 28 * 24 * 60 * 60 * 1000),
+        interviewDate: application.interviewDate,
+      });
+    }
+  }, [open, application, mode]);
+
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (loading) return; // Prevent multiple submissions
     
-    // Validate that a resume is uploaded
-    if (!formData.resumeUrl || !uploadedFileName) {
+    // Validate that a resume is uploaded (only for create mode)
+    if (mode === "create" && (!formData.resumeUrl || !uploadedFileName)) {
       toast.error('Please upload a resume before submitting');
       return;
     }
