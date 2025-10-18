@@ -6,11 +6,6 @@ import { startWorker } from './worker'
 import 'dotenv/config'
 
 async function main() {
-  console.log('Starting Temporal Worker...')
-  console.log(`Environment: ${process.env.NODE_ENV || 'development'}`)
-  console.log(`Temporal Address: ${process.env.TEMPORAL_ADDRESS || 'localhost:7233'}`)
-  console.log(`Temporal Namespace: ${process.env.TEMPORAL_NAMESPACE || 'default'}`)
-
   try {
     await startWorker()
   } catch (error) {

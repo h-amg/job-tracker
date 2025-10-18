@@ -70,7 +70,7 @@ export async function POST(request: NextRequest) {
       // Persist workflowId on the application
       await ApplicationService.setWorkflowId(application.id, workflowId)
     } catch (workflowError) {
-      console.warn('Failed to start workflow, continuing without it:', workflowError)
+      // Continue without workflow if it fails to start
     }
 
     // Start resume extraction workflow if resume URL and job description exist
@@ -94,9 +94,7 @@ export async function POST(request: NextRequest) {
           'Pending'
         )
         
-        console.log(`Started resume extraction workflow ${resumeWorkflowHandle.workflowId} for application ${application.id}`)
       } catch (resumeError) {
-        console.warn('Failed to start resume extraction workflow:', resumeError)
         // Update status to Failed
         await ApplicationService.updateResumeExtractionStatus(
           application.id,

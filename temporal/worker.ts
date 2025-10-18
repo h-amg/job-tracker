@@ -5,18 +5,9 @@ import { ApplicationWorkflow, CoverLetterGenerationWorkflow } from './workflows/
 import { ResumeExtractionWorkflow } from './workflows/resume-extraction-workflow'
 
 async function run() {
-  console.log('Starting Temporal worker...')
-
   // Create native worker connection (NOT the client Connection)
   const connection = await NativeConnection.connect({
     address: process.env.TEMPORAL_ADDRESS || 'localhost:7233',
-    // For Temporal Cloud, you would add TLS configuration here
-    // tls: {
-    //   clientCertPair: {
-    //     crt: fs.readFileSync(process.env.TEMPORAL_CERT_PATH!),
-    //     key: fs.readFileSync(process.env.TEMPORAL_KEY_PATH!),
-    //   },
-    // },
   })
 
   // Create worker
@@ -33,16 +24,10 @@ async function run() {
     maxConcurrentLocalActivityExecutions: 10,
   })
 
-  console.log('Temporal worker created successfully')
-  console.log(`Worker listening on namespace: ${process.env.TEMPORAL_NAMESPACE || 'default'}`)
-  console.log(`Worker task queue: application-task-queue`)
-
   // Handle graceful shutdown
   const shutdown = async () => {
-    console.log('Shutting down Temporal worker...')
     await worker.shutdown()
     await connection.close()
-    console.log('Temporal worker shutdown complete')
     process.exit(0)
   }
 

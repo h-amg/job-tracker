@@ -17,13 +17,6 @@ export class TemporalClient {
       // Create connection
       this.connection = await Connection.connect({
         address: process.env.TEMPORAL_ADDRESS || 'localhost:7233',
-        // For Temporal Cloud, you would add TLS configuration here
-        // tls: {
-        //   clientCertPair: {
-        //     crt: fs.readFileSync(process.env.TEMPORAL_CERT_PATH!),
-        //     key: fs.readFileSync(process.env.TEMPORAL_KEY_PATH!),
-        //   },
-        // },
       })
 
       // Create client
@@ -32,7 +25,6 @@ export class TemporalClient {
         namespace: process.env.TEMPORAL_NAMESPACE || 'default',
       })
 
-      console.log('Temporal client initialized successfully')
     } catch (error) {
       console.error('Failed to initialize Temporal client:', error)
       throw error
@@ -65,13 +57,11 @@ export class TemporalClient {
         // Set workflow run timeout to 30 days (individual runs shouldn't take that long)
         workflowRunTimeout: '30d',
       })
-      console.log(`Started workflow ${workflowId} for application ${applicationId}`)
       return handle
     } catch (err: unknown) {
       // If a workflow with the same ID is already running, return a handle to it (idempotent start)
       const error = err as { name?: string }
       if (error && (error.name === 'WorkflowExecutionAlreadyStartedError' || String(err).includes('Workflow execution already started'))) {
-        console.warn(`Workflow ${workflowId} already started, returning existing handle`)
         return client.workflow.getHandle(workflowId)
       }
       throw err
@@ -104,14 +94,12 @@ export class TemporalClient {
     const handle = client.workflow.getHandle(workflowId)
     await handle.signal(signalName, ...args)
     
-    console.log(`Sent signal ${signalName} to workflow ${workflowId}`)
   }
 
   static async updateStatus(workflowId: string, status: string, notes?: string): Promise<boolean> {
     // Check if workflow exists before signaling
     const exists = await this.workflowExists(workflowId)
     if (!exists) {
-      console.warn(`Workflow ${workflowId} not found, skipping signal`)
       return false
     }
     
@@ -123,7 +111,6 @@ export class TemporalClient {
     // Check if workflow exists before signaling
     const exists = await this.workflowExists(workflowId)
     if (!exists) {
-      console.warn(`Workflow ${workflowId} not found, skipping extendDeadline signal`)
       return false
     }
     
@@ -135,7 +122,6 @@ export class TemporalClient {
     // Check if workflow exists before cancelling
     const exists = await this.workflowExists(workflowId)
     if (!exists) {
-      console.warn(`Workflow ${workflowId} not found, skipping cancellation`)
       return false
     }
     
@@ -144,7 +130,6 @@ export class TemporalClient {
     const handle = client.workflow.getHandle(workflowId)
     await handle.cancel()
     
-    console.log(`Cancelled workflow ${workflowId}${reason ? `: ${reason}` : ''}`)
     return true
   }
 
@@ -197,7 +182,6 @@ export class TemporalClient {
     const handle = client.workflow.getHandle(workflowId)
     await handle.terminate(reason)
     
-    console.log(`Terminated workflow ${workflowId}${reason ? `: ${reason}` : ''}`)
   }
 
   static async close(): Promise<void> {
@@ -205,7 +189,6 @@ export class TemporalClient {
       await this.connection.close()
       this.connection = null
       this.client = null
-      console.log('Temporal client connection closed')
     }
   }
 
@@ -220,7 +203,6 @@ export class TemporalClient {
       })
       return true
     } catch (error) {
-      console.error('Temporal health check failed:', error)
       return false
     }
   }
@@ -246,12 +228,10 @@ export class TemporalClient {
         workflowExecutionTimeout: '1h',
         workflowRunTimeout: '30m',
       })
-      console.log(`Started resume extraction workflow ${workflowId} for application ${applicationId}`)
       return handle
     } catch (err: unknown) {
       const error = err as { name?: string }
       if (error && (error.name === 'WorkflowExecutionAlreadyStartedError' || String(err).includes('Workflow execution already started'))) {
-        console.warn(`Resume extraction workflow ${workflowId} already started, returning existing handle`)
         return client.workflow.getHandle(workflowId)
       }
       throw err
@@ -278,12 +258,10 @@ export class TemporalClient {
         workflowExecutionTimeout: '1h',
         workflowRunTimeout: '30m',
       })
-      console.log(`Started cover letter workflow ${workflowId} for application ${applicationId}`)
       return handle
     } catch (err: unknown) {
       const error = err as { name?: string }
       if (error && (error.name === 'WorkflowExecutionAlreadyStartedError' || String(err).includes('Workflow execution already started'))) {
-        console.warn(`Cover letter workflow ${workflowId} already started, returning existing handle`)
         return client.workflow.getHandle(workflowId)
       }
       throw err

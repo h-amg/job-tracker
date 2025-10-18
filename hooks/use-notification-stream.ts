@@ -65,7 +65,6 @@ export function useNotificationStream(
       eventSource.onopen = () => {
         setIsConnected(true)
         reconnectAttemptsRef.current = 0
-        console.log('SSE connection opened')
       }
 
       eventSource.onmessage = (event) => {
@@ -86,7 +85,6 @@ export function useNotificationStream(
             })
           } else if (data.type === 'heartbeat') {
             // Heartbeat received, connection is alive
-            console.log('SSE heartbeat received')
           }
         } catch (parseError) {
           console.error('Error parsing SSE message:', parseError)
@@ -101,7 +99,6 @@ export function useNotificationStream(
           // Connection closed, attempt to reconnect
           if (reconnectAttemptsRef.current < maxReconnectAttempts) {
             reconnectAttemptsRef.current++
-            console.log(`Attempting to reconnect (${reconnectAttemptsRef.current}/${maxReconnectAttempts})`)
             
             reconnectTimeoutRef.current = setTimeout(() => {
               connect()

@@ -75,11 +75,10 @@ export async function PUT(request: NextRequest, { params }: RouteParams) {
         
         // If workflow doesn't exist, clear the stale workflowId from database
         if (!workflowSignaled) {
-          console.log(`Clearing stale workflowId for application ${params.id}`)
           await ApplicationService.setWorkflowId(params.id, null)
         }
       } catch (signalError) {
-        console.error('Failed to signal workflow about deadline change:', signalError)
+        // Failed to signal workflow about deadline change
       }
     }
 
@@ -138,10 +137,10 @@ export async function DELETE(request: NextRequest, { params }: RouteParams) {
         
         // If workflow doesn't exist, just log it (we're deleting the app anyway)
         if (!workflowCancelled) {
-          console.log(`Workflow ${existingApplication.workflowId} not found, continuing with deletion`)
+          // Workflow not found, continuing with deletion
         }
       } catch (workflowError) {
-        console.error('Failed to cancel workflow:', workflowError)
+        // Failed to cancel workflow
       }
     }
 
