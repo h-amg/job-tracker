@@ -9,6 +9,7 @@ import {
   LayoutDashboardIcon,
   ArchiveIcon,
   PlusIcon,
+  Settings,
 } from "lucide-react";
 import {
   NotificationCenter,
@@ -116,6 +117,12 @@ export function Header({ onAddApplication }: HeaderProps) {
               onViewApplication={handleViewApplication}
               onClearAll={handleClearAllNotifications}
             />
+            <Link href="/settings">
+              <Button variant="ghost" size="sm" className="gap-2">
+                <Settings className="h-4 w-4" />
+                <span className="hidden sm:inline">Settings</span>
+              </Button>
+            </Link>
           </div>
         </div>
 
