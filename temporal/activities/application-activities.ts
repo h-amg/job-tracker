@@ -3,7 +3,13 @@ import { ApplicationService } from '@/lib/services/application-service'
 import { NotificationService } from '@/lib/services/notification-service'
 import { CoverLetterService } from '@/lib/services/cover-letter-service'
 import { BlobService } from '@/lib/services/blob-service'
+import { ResumeExtractionService } from '@/lib/services/resume-extraction-service'
+import { TemporalClient } from '@/lib/temporal-client'
 import { ApplicationStatus } from '@prisma/client'
+
+// Define the status types as string literals
+type ResumeExtractionStatus = 'Pending' | 'Processing' | 'Completed' | 'Failed'
+type CoverLetterGenerationStatus = 'Pending' | 'Processing' | 'Completed' | 'Failed'
 
 export async function sendDeadlineReminder(applicationId: string, deadline: Date): Promise<void> {
   log.info(`Sending deadline reminder for application ${applicationId}`)
@@ -100,6 +106,9 @@ export async function generateCoverLetter(input: {
   resumeContent?: string
   companyName?: string
   role?: string
+  applicantName?: string
+  applicantEmail?: string
+  applicantPhone?: string
 }): Promise<string> {
   // Ensure required fields have defaults
   const inputWithDefaults = {
@@ -107,6 +116,9 @@ export async function generateCoverLetter(input: {
     resumeContent: input.resumeContent,
     companyName: input.companyName || 'the company',
     role: input.role || 'the position',
+    applicantName: input.applicantName,
+    applicantEmail: input.applicantEmail,
+    applicantPhone: input.applicantPhone,
   }
   log.info(`Generating cover letter`, { 
     companyName: input.companyName,
@@ -270,5 +282,199 @@ export async function healthCheck(): Promise<{ status: string; timestamp: Date }
     }
     
     return result
+  }
+}
+
+// Resume Extraction Activities
+
+export async function downloadResumeFile(url: string): Promise<Buffer> {
+  log.info(`Downloading resume file from URL`, { url })
+
+  try {
+    const buffer = await ResumeExtractionService.downloadResumeFromUrl(url)
+    
+    log.info(`Resume file downloaded successfully`, {
+      url,
+      size: buffer.length,
+    })
+
+    return buffer
+  } catch (error) {
+    log.error(`Failed to download resume file`, {
+      url,
+      error: error instanceof Error ? error.message : String(error),
+    })
+    throw error
+  }
+}
+
+export async function extractResumeText(buffer: Buffer, filename: string): Promise<string> {
+  log.info(`Extracting text from resume file`, { filename, size: buffer.length })
+
+  try {
+    const extractedText = await ResumeExtractionService.extractTextFromFile(buffer, filename)
+    
+    log.info(`Resume text extracted successfully`, {
+      filename,
+      textLength: extractedText.length,
+    })
+
+    return extractedText
+  } catch (error) {
+    log.error(`Failed to extract text from resume file`, {
+      filename,
+      error: error instanceof Error ? error.message : String(error),
+    })
+    throw error
+  }
+}
+
+export async function saveResumeContent(applicationId: string, content: string): Promise<void> {
+  log.info(`Saving resume content to database`, { applicationId, contentLength: content.length })
+
+  try {
+    await ApplicationService.updateResumeExtractionStatus(
+      applicationId,
+      'Completed',
+      undefined,
+      content
+    )
+    
+    log.info(`Resume content saved successfully`, { applicationId })
+  } catch (error) {
+    log.error(`Failed to save resume content`, {
+      applicationId,
+      error: error instanceof Error ? error.message : String(error),
+    })
+    throw error
+  }
+}
+
+export async function updateResumeExtractionStatus(
+  applicationId: string,
+  status: ResumeExtractionStatus,
+  taskId?: string,
+  content?: string
+): Promise<void> {
+  log.info(`Updating resume extraction status`, { applicationId, status, taskId })
+
+  try {
+    await ApplicationService.updateResumeExtractionStatus(applicationId, status, taskId, content)
+    
+    log.info(`Resume extraction status updated`, { applicationId, status })
+  } catch (error) {
+    log.error(`Failed to update resume extraction status`, {
+      applicationId,
+      status,
+      error: error instanceof Error ? error.message : String(error),
+    })
+    throw error
+  }
+}
+
+export async function updateCoverLetterStatus(
+  applicationId: string,
+  status: CoverLetterGenerationStatus,
+  taskId?: string
+): Promise<void> {
+  log.info(`Updating cover letter generation status`, { applicationId, status, taskId })
+
+  try {
+    await ApplicationService.updateCoverLetterGenerationStatus(applicationId, status, taskId)
+    
+    log.info(`Cover letter generation status updated`, { applicationId, status })
+  } catch (error) {
+    log.error(`Failed to update cover letter generation status`, {
+      applicationId,
+      status,
+      error: error instanceof Error ? error.message : String(error),
+    })
+    throw error
+  }
+}
+
+export async function triggerCoverLetterWorkflow(applicationId: string): Promise<void> {
+  log.info(`Triggering cover letter generation workflow`, { applicationId })
+
+  try {
+    // Update cover letter status to Processing
+    await ApplicationService.updateCoverLetterGenerationStatus(
+      applicationId,
+      'Processing'
+    )
+
+    // Start the cover letter generation workflow
+    await TemporalClient.startCoverLetterWorkflow(applicationId)
+    
+    log.info(`Cover letter generation workflow triggered successfully`, { applicationId })
+  } catch (error) {
+    log.error(`Failed to trigger cover letter generation workflow`, {
+      applicationId,
+      error: error instanceof Error ? error.message : String(error),
+    })
+    
+    // Update status to Failed
+    await ApplicationService.updateCoverLetterGenerationStatus(
+      applicationId,
+      'Failed'
+    )
+    
+    throw error
+  }
+}
+
+export async function getApplicationData(applicationId: string) {
+  log.info(`Getting application data`, { applicationId })
+
+  try {
+    const application = await ApplicationService.getApplicationById(applicationId)
+    
+    log.info(`Application data retrieved`, { applicationId })
+    return application
+  } catch (error) {
+    log.error(`Failed to get application data`, {
+      applicationId,
+      error: error instanceof Error ? error.message : String(error),
+    })
+    throw error
+  }
+}
+
+export async function getUserInfo() {
+  log.info(`Getting user info`)
+
+  try {
+    const userInfo = await ApplicationService.getUserInfo()
+    
+    log.info(`User info retrieved`, { 
+      name: userInfo.name,
+      email: userInfo.email,
+      phone: userInfo.phone,
+    })
+    return userInfo
+  } catch (error) {
+    log.error(`Failed to get user info`, {
+      error: error instanceof Error ? error.message : String(error),
+    })
+    throw error
+  }
+}
+
+export async function updateApplicationWithCoverLetter(applicationId: string, coverLetterUrl: string) {
+  log.info(`Updating application with cover letter URL`, { applicationId, coverLetterUrl })
+
+  try {
+    await ApplicationService.updateApplication(applicationId, {
+      coverLetterUrl,
+    })
+    
+    log.info(`Application updated with cover letter URL`, { applicationId })
+  } catch (error) {
+    log.error(`Failed to update application with cover letter URL`, {
+      applicationId,
+      coverLetterUrl,
+      error: error instanceof Error ? error.message : String(error),
+    })
+    throw error
   }
 }

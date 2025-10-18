@@ -2,6 +2,10 @@ import { prisma } from '@/lib/prisma'
 import { ApplicationStatus, JobType } from '@prisma/client'
 import { z } from 'zod'
 
+// Define the status types as string literals
+type ResumeExtractionStatus = 'Pending' | 'Processing' | 'Completed' | 'Failed'
+type CoverLetterGenerationStatus = 'Pending' | 'Processing' | 'Completed' | 'Failed'
+
 // Validation schemas
 export const CreateApplicationSchema = z.object({
   company: z.string().min(1, 'Company name is required'),
@@ -294,5 +298,62 @@ export class ApplicationService {
     })
 
     return result
+  }
+
+  static async updateResumeExtractionStatus(
+    id: string, 
+    status: ResumeExtractionStatus, 
+    taskId?: string, 
+    content?: string
+  ) {
+    return await prisma.application.update({
+      where: { id },
+      data: {
+        resumeExtractionStatus: status,
+        resumeExtractionTaskId: taskId,
+        resumeContent: content,
+        updatedAt: new Date(),
+      },
+    })
+  }
+
+  static async updateCoverLetterGenerationStatus(
+    id: string, 
+    status: CoverLetterGenerationStatus, 
+    taskId?: string
+  ) {
+    return await prisma.application.update({
+      where: { id },
+      data: {
+        coverLetterGenerationStatus: status,
+        coverLetterGenerationTaskId: taskId,
+        updatedAt: new Date(),
+      },
+    })
+  }
+
+  static async getResumeContent(id: string) {
+    const application = await prisma.application.findUnique({
+      where: { id },
+      select: {
+        resumeContent: true,
+        resumeExtractionStatus: true,
+        resumeExtractionTaskId: true,
+      },
+    })
+
+    return application
+  }
+
+  static async getUserInfo() {
+    // For now, return a default user or get from a single user record
+    // In a multi-user system, this would get the current user's info
+    const user = await prisma.user.findFirst()
+    
+    return user || {
+      name: 'Applicant',
+      email: 'applicant@example.com',
+      phone: '+1 (555) 123-4567',
+    }
   }
 }

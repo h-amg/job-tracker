@@ -32,6 +32,8 @@ interface ApplicationCardProps {
     salary?: string;
     location?: string;
     jobType?: string;
+    resumeExtractionStatus?: "Pending" | "Processing" | "Completed" | "Failed";
+    coverLetterGenerationStatus?: "Pending" | "Processing" | "Completed" | "Failed";
   };
   onStatusUpdate?: (id: string) => void;
   onArchive?: (id: string) => void;
@@ -251,6 +253,50 @@ export function ApplicationCard({
             </span>
           </div>
         )}
+
+      {/* Resume Extraction and Cover Letter Status */}
+      {(application.resumeExtractionStatus === "Processing" || 
+        application.coverLetterGenerationStatus === "Processing" ||
+        application.resumeExtractionStatus === "Failed" ||
+        application.coverLetterGenerationStatus === "Failed") && (
+        <div className="mb-4 p-3 bg-blue-50 dark:bg-blue-950 border border-blue-200 dark:border-blue-800 rounded-md">
+          <div className="space-y-2">
+            {application.resumeExtractionStatus === "Processing" && (
+              <div className="flex items-center gap-2 text-sm text-blue-900 dark:text-blue-100">
+                <div className="animate-spin rounded-full h-4 w-4 border-2 border-blue-600 border-t-transparent"></div>
+                <span>Extracting resume content...</span>
+              </div>
+            )}
+            {application.resumeExtractionStatus === "Failed" && (
+              <div className="flex items-center gap-2 text-sm text-red-900 dark:text-red-100">
+                <AlertCircleIcon className="h-4 w-4" />
+                <span>Resume extraction failed</span>
+              </div>
+            )}
+            {application.coverLetterGenerationStatus === "Processing" && (
+              <div className="flex items-center gap-2 text-sm text-blue-900 dark:text-blue-100">
+                <div className="animate-spin rounded-full h-4 w-4 border-2 border-blue-600 border-t-transparent"></div>
+                <span>Generating cover letter...</span>
+              </div>
+            )}
+            {application.coverLetterGenerationStatus === "Failed" && (
+              <div className="flex items-center gap-2 text-sm text-red-900 dark:text-red-100">
+                <AlertCircleIcon className="h-4 w-4" />
+                <span>Cover letter generation failed</span>
+              </div>
+            )}
+            {(application.resumeExtractionStatus === "Completed" && 
+              application.coverLetterGenerationStatus === "Completed") && (
+              <div className="flex items-center gap-2 text-sm text-green-900 dark:text-green-100">
+                <div className="h-4 w-4 rounded-full bg-green-600 flex items-center justify-center">
+                  <span className="text-white text-xs">✓</span>
+                </div>
+                <span>Cover letter ready!</span>
+              </div>
+            )}
+          </div>
+        </div>
+      )}
 
       {/* Actions */}
       {showActions && (

@@ -9,6 +9,11 @@ const {
   updateApplicationStatus,
   generateCoverLetter,
   uploadToBlob,
+  updateCoverLetterStatus,
+  createCoverLetterNotification,
+  getApplicationData,
+  getUserInfo,
+  updateApplicationWithCoverLetter,
 } = proxyActivities<typeof activities>({
   startToCloseTimeout: '5m',
   retry: {
@@ -206,26 +211,46 @@ export async function ApplicationWorkflow(applicationId: string, deadline: Date 
 
 // Helper workflow for cover letter generation
 export async function CoverLetterGenerationWorkflow(
-  applicationId: string,
-  jobDescription: string,
-  resumeContent?: string,
-  companyName?: string,
-  role?: string
+  applicationId: string
 ): Promise<string> {
   log.info(`Starting CoverLetterGenerationWorkflow`, { applicationId })
 
   try {
+    // Update status to Processing
+    await updateCoverLetterStatus(applicationId, 'Processing')
+
+    // Get application data from database
+    const application = await getApplicationData(applicationId)
+    if (!application) {
+      throw new Error(`Application ${applicationId} not found`)
+    }
+
+    // Get user info for personalization
+    const userInfo = await getUserInfo()
+
     // Generate cover letter
     const coverLetter = await generateCoverLetter({
-      jobDescription,
-      resumeContent,
-      companyName,
-      role,
+      jobDescription: application.jobDescription,
+      resumeContent: application.resumeContent || undefined,
+      companyName: application.company,
+      role: application.role,
+      applicantName: userInfo.name || undefined,
+      applicantEmail: userInfo.email || undefined,
+      applicantPhone: userInfo.phone || undefined,
     })
 
     // Upload to blob storage
     const filename = `cover-letter-${applicationId}-${Date.now()}.txt`
     const blobUrl = await uploadToBlob(coverLetter, filename, 'cover-letters')
+
+    // Update application with cover letter URL
+    await updateApplicationWithCoverLetter(applicationId, blobUrl)
+
+    // Update status to Completed
+    await updateCoverLetterStatus(applicationId, 'Completed')
+
+    // Create notification for user
+    await createCoverLetterNotification(applicationId, 'completed')
 
     log.info(`Cover letter generated and uploaded`, { 
       applicationId, 
@@ -238,6 +263,13 @@ export async function CoverLetterGenerationWorkflow(
       applicationId, 
       error: error instanceof Error ? error.message : String(error)
     })
+
+    // Update status to Failed
+    await updateCoverLetterStatus(applicationId, 'Failed')
+
+    // Create failure notification
+    await createCoverLetterNotification(applicationId, 'failed')
+
     throw error
   }
 }

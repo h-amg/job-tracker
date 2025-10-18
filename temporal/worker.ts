@@ -2,6 +2,7 @@ import { Worker, NativeConnection } from '@temporalio/worker'
 import { fileURLToPath, pathToFileURL } from 'url'
 import * as activities from './activities/application-activities'
 import { ApplicationWorkflow, CoverLetterGenerationWorkflow } from './workflows/application-workflow'
+import { ResumeExtractionWorkflow } from './workflows/resume-extraction-workflow'
 
 async function run() {
   console.log('Starting Temporal worker...')
@@ -23,8 +24,8 @@ async function run() {
     connection,
     namespace: process.env.TEMPORAL_NAMESPACE || 'default',
     taskQueue: 'application-task-queue',
-    // ESM-safe workflows path resolution
-    workflowsPath: fileURLToPath(new URL('./workflows/application-workflow.ts', import.meta.url)),
+    // ESM-safe workflows path resolution - point to workflows directory
+    workflowsPath: fileURLToPath(new URL('./workflows', import.meta.url)),
     activities,
     // Configure worker options
     maxConcurrentActivityTaskExecutions: 10,

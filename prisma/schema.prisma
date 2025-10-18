@@ -47,6 +47,20 @@ enum WorkflowStatus {
   Cancelled
 }
 
+enum ResumeExtractionStatus {
+  Pending
+  Processing
+  Completed
+  Failed
+}
+
+enum CoverLetterGenerationStatus {
+  Pending
+  Processing
+  Completed
+  Failed
+}
+
 model Application {
   id               String            @id @default(cuid())
   company          String
@@ -64,6 +78,11 @@ model Application {
   location         String?
   jobType          JobType?          @default(FullTime)
   workflowId       String?           @unique
+  resumeContent    String?
+  resumeExtractionStatus ResumeExtractionStatus @default(Pending)
+  resumeExtractionTaskId String?
+  coverLetterGenerationStatus CoverLetterGenerationStatus @default(Pending)
+  coverLetterGenerationTaskId String?
 
   // Relations
   timelineEvents   TimelineEvent[]

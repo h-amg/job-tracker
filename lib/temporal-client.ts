@@ -224,4 +224,69 @@ export class TemporalClient {
       return false
     }
   }
+
+  static async startResumeExtractionWorkflow(
+    applicationId: string,
+    resumeUrl: string,
+    options?: {
+      workflowId?: string
+      taskQueue?: string
+    }
+  ): Promise<WorkflowHandle> {
+    const client = await this.getClient()
+    
+    const workflowId = options?.workflowId || `resume-extraction-${applicationId}`
+    const taskQueue = options?.taskQueue || 'application-task-queue'
+
+    try {
+      const handle = await client.workflow.start('ResumeExtractionWorkflow', {
+        args: [applicationId, resumeUrl],
+        taskQueue,
+        workflowId,
+        workflowExecutionTimeout: '1h',
+        workflowRunTimeout: '30m',
+      })
+      console.log(`Started resume extraction workflow ${workflowId} for application ${applicationId}`)
+      return handle
+    } catch (err: unknown) {
+      const error = err as { name?: string }
+      if (error && (error.name === 'WorkflowExecutionAlreadyStartedError' || String(err).includes('Workflow execution already started'))) {
+        console.warn(`Resume extraction workflow ${workflowId} already started, returning existing handle`)
+        return client.workflow.getHandle(workflowId)
+      }
+      throw err
+    }
+  }
+
+  static async startCoverLetterWorkflow(
+    applicationId: string,
+    options?: {
+      workflowId?: string
+      taskQueue?: string
+    }
+  ): Promise<WorkflowHandle> {
+    const client = await this.getClient()
+    
+    const workflowId = options?.workflowId || `cover-letter-${applicationId}`
+    const taskQueue = options?.taskQueue || 'application-task-queue'
+
+    try {
+      const handle = await client.workflow.start('CoverLetterGenerationWorkflow', {
+        args: [applicationId],
+        taskQueue,
+        workflowId,
+        workflowExecutionTimeout: '1h',
+        workflowRunTimeout: '30m',
+      })
+      console.log(`Started cover letter workflow ${workflowId} for application ${applicationId}`)
+      return handle
+    } catch (err: unknown) {
+      const error = err as { name?: string }
+      if (error && (error.name === 'WorkflowExecutionAlreadyStartedError' || String(err).includes('Workflow execution already started'))) {
+        console.warn(`Cover letter workflow ${workflowId} already started, returning existing handle`)
+        return client.workflow.getHandle(workflowId)
+      }
+      throw err
+    }
+  }
 }

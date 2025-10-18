@@ -73,6 +73,38 @@ export async function POST(request: NextRequest) {
       console.warn('Failed to start workflow, continuing without it:', workflowError)
     }
 
+    // Start resume extraction workflow if resume URL and job description exist
+    if (validatedData.resumeUrl && validatedData.jobDescription) {
+      try {
+        const resumeWorkflowHandle = await TemporalClient.startResumeExtractionWorkflow(
+          application.id,
+          validatedData.resumeUrl
+        )
+        
+        // Update application with resume extraction task ID and status
+        await ApplicationService.updateResumeExtractionStatus(
+          application.id,
+          'Processing',
+          resumeWorkflowHandle.workflowId
+        )
+        
+        // Set cover letter generation status to Pending
+        await ApplicationService.updateCoverLetterGenerationStatus(
+          application.id,
+          'Pending'
+        )
+        
+        console.log(`Started resume extraction workflow ${resumeWorkflowHandle.workflowId} for application ${application.id}`)
+      } catch (resumeError) {
+        console.warn('Failed to start resume extraction workflow:', resumeError)
+        // Update status to Failed
+        await ApplicationService.updateResumeExtractionStatus(
+          application.id,
+          'Failed'
+        )
+      }
+    }
+
     return NextResponse.json({
       success: true,
       data: application,
