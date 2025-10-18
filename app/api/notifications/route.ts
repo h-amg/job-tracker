@@ -6,6 +6,14 @@ const MarkAllAsReadSchema = z.object({
   applicationId: z.string().optional(),
 })
 
+const CreateNotificationSchema = z.object({
+  applicationId: z.string(),
+  type: z.enum(['DeadlineReminder', 'InterviewReminder', 'CoverLetterGenerated', 'StatusUpdate']),
+  title: z.string(),
+  message: z.string(),
+  status: z.enum(['Pending', 'Completed', 'Failed']).optional(),
+})
+
 // GET /api/notifications - Fetch user notifications
 export async function GET(request: NextRequest) {
   try {
@@ -29,6 +37,52 @@ export async function GET(request: NextRequest) {
       {
         success: false,
         error: 'Failed to fetch notifications',
+        message: error instanceof Error ? error.message : 'Unknown error',
+      },
+      { status: 500 }
+    )
+  }
+}
+
+// POST /api/notifications - Create a new notification (for testing)
+export async function POST(request: NextRequest) {
+  try {
+    const body = await request.json()
+    
+    // Validate input
+    const validatedData = CreateNotificationSchema.parse(body)
+    
+    const notification = await NotificationService.createNotification({
+      applicationId: validatedData.applicationId,
+      type: validatedData.type as any, // Type assertion needed due to enum mismatch
+      title: validatedData.title,
+      message: validatedData.message,
+      status: validatedData.status as any, // Type assertion needed due to enum mismatch
+    })
+
+    return NextResponse.json({
+      success: true,
+      data: notification,
+      message: 'Notification created successfully',
+    })
+  } catch (error) {
+    console.error('Error creating notification:', error)
+    
+    if (error instanceof z.ZodError) {
+      return NextResponse.json(
+        {
+          success: false,
+          error: 'Validation error',
+          message: error.errors.map(e => `${e.path.join('.')}: ${e.message}`).join(', '),
+        },
+        { status: 400 }
+      )
+    }
+
+    return NextResponse.json(
+      {
+        success: false,
+        error: 'Failed to create notification',
         message: error instanceof Error ? error.message : 'Unknown error',
       },
       { status: 500 }

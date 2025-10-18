@@ -30,19 +30,7 @@ export class NotificationService {
       },
     })
 
-    // Broadcast to SSE clients
-    this.broadcastNotification(notification)
-
     return notification
-  }
-
-  private static broadcastNotification(notification: any) {
-    // Import the broadcast function dynamically to avoid circular imports
-    import('@/app/api/notifications/stream/route').then(({ broadcastNotification }) => {
-      broadcastNotification(notification)
-    }).catch(() => {
-      // Ignore errors if SSE module is not available
-    })
   }
 
   static async getNotifications(applicationId?: string, unreadOnly = false) {
