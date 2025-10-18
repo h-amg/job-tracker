@@ -197,6 +197,12 @@ export const applicationApi = {
 
   // Get cover letter
   getCoverLetter: (id: string) => apiClient.get<{ url: string }>(`/api/applications/${id}/cover-letter`),
+
+  // Get resume content
+  getResumeContent: (id: string) => apiClient.get<{ content: string | null; status: string; taskId?: string }>(`/api/applications/${id}/resume-content`),
+
+  // Get cover letter content
+  getCoverLetterContent: (id: string) => apiClient.get<{ content: string; coverLetterUrl: string }>(`/api/applications/${id}/cover-letter`),
 }
 
 // Notification API methods

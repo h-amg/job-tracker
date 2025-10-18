@@ -16,6 +16,7 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { ApplicationDetailSkeleton } from "@/components/features/skeleton-components";
 import {
   ArrowLeftIcon,
@@ -28,6 +29,9 @@ import {
   ExternalLinkIcon,
   AlertCircleIcon,
   ClockIcon,
+  Loader2Icon,
+  CopyIcon,
+  CheckIcon,
 } from "lucide-react";
 
 interface ApplicationDetailProps {
@@ -41,6 +45,18 @@ export function ApplicationDetail({ applicationId }: ApplicationDetailProps) {
   const [timelineEvents, setTimelineEvents] = useState<TimelineEvent[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  
+  // Document viewer state
+  const [selectedDocument, setSelectedDocument] = useState<'job-description' | 'cover-letter'>('job-description');
+  const [coverLetterContent, setCoverLetterContent] = useState<string | null>(null);
+  const [coverLetterLoading, setCoverLetterLoading] = useState(false);
+  const [coverLetterError, setCoverLetterError] = useState<string | null>(null);
+  const [coverLetterCopied, setCoverLetterCopied] = useState(false);
+  
+  // Form submission state
+  const [isUpdating, setIsUpdating] = useState(false);
+  const [isUpdatingStatus, setIsUpdatingStatus] = useState(false);
+  
 
   useEffect(() => {
     const load = async () => {
@@ -82,6 +98,133 @@ export function ApplicationDetail({ applicationId }: ApplicationDetailProps) {
     };
     load();
   }, [applicationId]);
+
+  // Fetch cover letter content when cover letter tab is selected
+  useEffect(() => {
+    if (selectedDocument === 'cover-letter' && application && !coverLetterContent && !coverLetterLoading && !coverLetterError) {
+      const fetchCoverLetterContent = async () => {
+        setCoverLetterLoading(true);
+        setCoverLetterError(null);
+        try {
+          const response = await applicationApi.getCoverLetterContent(applicationId);
+          if (response.success && response.data) {
+            setCoverLetterContent(response.data.content);
+          } else {
+            setCoverLetterError(response.error || 'Failed to load cover letter content');
+          }
+        } catch (error) {
+          setCoverLetterError(error instanceof Error ? error.message : 'Failed to load cover letter content');
+        } finally {
+          setCoverLetterLoading(false);
+        }
+      };
+      fetchCoverLetterContent();
+    }
+  }, [selectedDocument, application, applicationId, coverLetterContent, coverLetterLoading, coverLetterError]);
+
+  // Copy cover letter to clipboard
+  const copyCoverLetterToClipboard = async () => {
+    if (!coverLetterContent) return;
+    
+    try {
+      await navigator.clipboard.writeText(coverLetterContent);
+      setCoverLetterCopied(true);
+      setTimeout(() => setCoverLetterCopied(false), 2000); // Reset after 2 seconds
+    } catch (error) {
+      console.error('Failed to copy to clipboard:', error);
+    }
+  };
+
+  // Handle application update
+  const handleApplicationUpdate = async (data: any) => {
+    if (!application) return;
+    
+    setIsUpdating(true);
+    try {
+      const response = await applicationApi.updateApplication(applicationId, data);
+      if (response.success && response.data) {
+        // Update local state with the new data
+        const updatedApp: Application = {
+          ...application,
+          ...response.data,
+          status: response.data.status as ApplicationStatus,
+          jobType: response.data.jobType as "Full-time" | "Part-time" | "Contract" | "Internship" | undefined,
+          deadline: new Date(response.data.deadline),
+          createdAt: new Date(response.data.createdAt),
+          updatedAt: new Date(response.data.updatedAt),
+          interviewDate: response.data.interviewDate ? new Date(response.data.interviewDate) : undefined,
+        };
+        setApplication(updatedApp);
+        setEditFormOpen(false);
+        
+        // Refresh timeline events
+        try {
+          const timelineRes = await applicationApi.getTimeline(applicationId);
+          if (timelineRes.success && timelineRes.data) {
+            const events = (timelineRes.data as TimelineEvent[]).map((e) => ({
+              ...e,
+              timestamp: new Date(e.timestamp),
+            }));
+            setTimelineEvents(events);
+          }
+        } catch (timelineError) {
+          console.error('Failed to refresh timeline:', timelineError);
+        }
+      } else {
+        console.error('Failed to update application:', response.error);
+      }
+    } catch (error) {
+      console.error('Error updating application:', error);
+    } finally {
+      setIsUpdating(false);
+    }
+  };
+
+  // Handle status update
+  const handleStatusUpdate = async (data: any) => {
+    if (!application) return;
+    
+    setIsUpdatingStatus(true);
+    try {
+      const response = await applicationApi.updateStatus(applicationId, data);
+      
+      if (response.success && response.data) {
+        // Update local state with the new data
+        const updatedApp: Application = {
+          ...application,
+          ...response.data,
+          status: response.data.status as ApplicationStatus,
+          jobType: response.data.jobType as "Full-time" | "Part-time" | "Contract" | "Internship" | undefined,
+          deadline: new Date(response.data.deadline),
+          createdAt: new Date(response.data.createdAt),
+          updatedAt: new Date(response.data.updatedAt),
+          interviewDate: response.data.interviewDate ? new Date(response.data.interviewDate) : undefined,
+        };
+        setApplication(updatedApp);
+        setStatusFormOpen(false);
+        
+        // Refresh timeline events
+        try {
+          const timelineRes = await applicationApi.getTimeline(applicationId);
+          if (timelineRes.success && timelineRes.data) {
+            const events = (timelineRes.data as TimelineEvent[]).map((e) => ({
+              ...e,
+              timestamp: new Date(e.timestamp),
+            }));
+            setTimelineEvents(events);
+          }
+        } catch (timelineError) {
+          console.error('Failed to refresh timeline:', timelineError);
+        }
+      } else {
+        console.error('Failed to update status:', response.error);
+      }
+    } catch (error) {
+      console.error('Error updating status:', error);
+    } finally {
+      setIsUpdatingStatus(false);
+    }
+  };
 
   if (loading) {
     return (
@@ -144,15 +287,29 @@ export function ApplicationDetail({ applicationId }: ApplicationDetailProps) {
           <p className="text-xl text-muted-foreground">{application.company}</p>
         </div>
         <div className="flex items-center gap-2">
-          <Button variant="outline" onClick={() => setEditFormOpen(true)}>
-            <EditIcon className="h-4 w-4 mr-2" />
-            Edit
+          <Button 
+            variant="outline" 
+            onClick={() => setEditFormOpen(true)}
+            disabled={isUpdating || isUpdatingStatus}
+          >
+            {isUpdating ? (
+              <Loader2Icon className="h-4 w-4 mr-2 animate-spin" />
+            ) : (
+              <EditIcon className="h-4 w-4 mr-2" />
+            )}
+            {isUpdating ? 'Updating...' : 'Edit'}
           </Button>
           {!["Rejected", "Withdrawn", "Archived", "Offer"].includes(
             application.status
           ) && (
-            <Button onClick={() => setStatusFormOpen(true)}>
-              Update Status
+            <Button 
+              onClick={() => setStatusFormOpen(true)}
+              disabled={isUpdating || isUpdatingStatus}
+            >
+              {isUpdatingStatus ? (
+                <Loader2Icon className="h-4 w-4 mr-2 animate-spin" />
+              ) : null}
+              {isUpdatingStatus ? 'Updating Status...' : 'Update Status'}
             </Button>
           )}
         </div>
@@ -206,18 +363,75 @@ export function ApplicationDetail({ applicationId }: ApplicationDetailProps) {
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {/* Main Content */}
         <div className="lg:col-span-2 space-y-6">
-          {/* Job Description */}
+          {/* Documents */}
           <Card>
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
                 <FileTextIcon className="h-5 w-5" />
-                Job Description
+                Documents
               </CardTitle>
             </CardHeader>
             <CardContent>
-              <p className="text-muted-foreground whitespace-pre-wrap">
-                {application.jobDescription}
-              </p>
+              <Tabs value={selectedDocument} onValueChange={(value) => setSelectedDocument(value as 'job-description' | 'cover-letter')}>
+                <TabsList className="grid w-full grid-cols-2">
+                  <TabsTrigger value="job-description">Job Description</TabsTrigger>
+                  <TabsTrigger value="cover-letter">Cover Letter</TabsTrigger>
+                </TabsList>
+                
+                <TabsContent value="job-description" className="mt-4">
+                  <div className="max-h-96 overflow-y-auto text-muted-foreground whitespace-pre-wrap">
+                    {application.jobDescription}
+                  </div>
+                </TabsContent>
+                
+                <TabsContent value="cover-letter" className="mt-4">
+                  {coverLetterLoading ? (
+                    <div className="flex items-center justify-center py-8">
+                      <Loader2Icon className="h-6 w-6 animate-spin mr-2" />
+                      <span>Loading cover letter content...</span>
+                    </div>
+                  ) : coverLetterError ? (
+                    <div className="text-center py-8">
+                      <p className="text-red-500 mb-2">{coverLetterError}</p>
+                      <p className="text-sm text-muted-foreground">
+                        {!application.coverLetterLink ? 'No cover letter generated for this application.' : 'Failed to load cover letter content.'}
+                      </p>
+                    </div>
+                  ) : coverLetterContent ? (
+                    <div className="space-y-3">
+                      <div className="flex justify-end">
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={copyCoverLetterToClipboard}
+                          className="gap-2"
+                        >
+                          {coverLetterCopied ? (
+                            <>
+                              <CheckIcon className="h-4 w-4" />
+                              Copied!
+                            </>
+                          ) : (
+                            <>
+                              <CopyIcon className="h-4 w-4" />
+                              Copy to Clipboard
+                            </>
+                          )}
+                        </Button>
+                      </div>
+                      <div className="max-h-96 overflow-y-auto text-muted-foreground whitespace-pre-wrap">
+                        {coverLetterContent}
+                      </div>
+                    </div>
+                  ) : (
+                    <div className="text-center py-8">
+                      <p className="text-muted-foreground">
+                        {!application.coverLetterLink ? 'No cover letter generated for this application.' : 'Cover letter content not available.'}
+                      </p>
+                    </div>
+                  )}
+                </TabsContent>
+              </Tabs>
             </CardContent>
           </Card>
 
@@ -258,6 +472,28 @@ export function ApplicationDetail({ applicationId }: ApplicationDetailProps) {
               <CardTitle>Details</CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
+              {/* Status */}
+              <div className="flex items-start gap-3">
+                <div className="h-5 w-5 flex-shrink-0 mt-0.5 flex items-center justify-center">
+                  <div className={`h-2 w-2 rounded-full ${
+                    application.status === 'Active' ? 'bg-blue-500' :
+                    application.status === 'Interview' ? 'bg-purple-500' :
+                    application.status === 'Offer' ? 'bg-green-500' :
+                    application.status === 'Rejected' ? 'bg-red-500' :
+                    application.status === 'Withdrawn' ? 'bg-gray-500' :
+                    'bg-yellow-500'
+                  }`} />
+                </div>
+                <div className="flex-1 min-w-0">
+                  <p className="text-sm font-medium">Status</p>
+                  <p className="text-sm text-muted-foreground">
+                    {application.status}
+                  </p>
+                </div>
+              </div>
+
+              <Separator />
+
               {/* Deadline */}
               <div className="flex items-start gap-3">
                 <CalendarIcon className="h-5 w-5 text-muted-foreground flex-shrink-0 mt-0.5" />
@@ -372,6 +608,60 @@ export function ApplicationDetail({ applicationId }: ApplicationDetailProps) {
                   </>
                 )}
 
+              {/* Resume */}
+              {application.resumeLink && (
+                <>
+                  <div className="flex items-start gap-3">
+                    <FileTextIcon className="h-5 w-5 text-muted-foreground flex-shrink-0 mt-0.5" />
+
+                    <div className="flex-1 min-w-0">
+                      <p className="text-sm font-medium">Resume</p>
+                      <a
+                        href={application.resumeLink}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="text-sm text-blue-600 dark:text-blue-400 hover:underline flex items-center gap-1"
+                      >
+                        <ExternalLinkIcon className="h-3 w-3" />
+                        Download Resume
+                      </a>
+                    </div>
+                  </div>
+                  <Separator />
+                </>
+              )}
+
+              {/* Cover Letter Status */}
+              <div className="flex items-start gap-3">
+                <FileTextIcon className="h-5 w-5 text-muted-foreground flex-shrink-0 mt-0.5" />
+
+                <div className="flex-1 min-w-0">
+                  <p className="text-sm font-medium">Cover Letter</p>
+                  <p className="text-sm text-muted-foreground">
+                    {application.coverLetterLink ? '✓ Generated' : '✗ Not generated'}
+                  </p>
+                </div>
+              </div>
+
+              <Separator />
+
+              {/* Notes */}
+              {application.notes && (
+                <>
+                  <div className="flex items-start gap-3">
+                    <FileTextIcon className="h-5 w-5 text-muted-foreground flex-shrink-0 mt-0.5" />
+
+                    <div className="flex-1 min-w-0">
+                      <p className="text-sm font-medium">Notes</p>
+                      <p className="text-sm text-muted-foreground whitespace-pre-wrap">
+                        {application.notes}
+                      </p>
+                    </div>
+                  </div>
+                  <Separator />
+                </>
+              )}
+
               {/* Dates */}
               <div className="space-y-2 text-xs text-muted-foreground">
                 <p>Created: {application.createdAt.toLocaleDateString()}</p>
@@ -380,32 +670,6 @@ export function ApplicationDetail({ applicationId }: ApplicationDetailProps) {
             </CardContent>
           </Card>
 
-          {/* Documents */}
-          <Card>
-            <CardHeader>
-              <CardTitle>Documents</CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-2">
-              <Button
-                variant="outline"
-                size="sm"
-                className="w-full justify-start gap-2"
-              >
-                <ExternalLinkIcon className="h-4 w-4" />
-                View Resume
-              </Button>
-              {application.coverLetterLink && (
-                <Button
-                  variant="outline"
-                  size="sm"
-                  className="w-full justify-start gap-2"
-                >
-                  <ExternalLinkIcon className="h-4 w-4" />
-                  View Cover Letter
-                </Button>
-              )}
-            </CardContent>
-          </Card>
         </div>
       </div>
 
@@ -414,16 +678,18 @@ export function ApplicationDetail({ applicationId }: ApplicationDetailProps) {
         application={application}
         open={editFormOpen}
         onOpenChange={setEditFormOpen}
-        onSubmit={(data) => console.log("Edit application:", data)}
+        onSubmit={handleApplicationUpdate}
         mode="edit"
+        loading={isUpdating}
       />
 
       <ApplicationForm
         application={application}
         open={statusFormOpen}
         onOpenChange={setStatusFormOpen}
-        onSubmit={(data) => console.log("Status update:", data)}
+        onSubmit={handleStatusUpdate}
         mode="status"
+        loading={isUpdatingStatus}
       />
       </div>
     </div>

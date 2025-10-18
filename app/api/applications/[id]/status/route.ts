@@ -43,11 +43,10 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
         
         // If workflow doesn't exist, clear the stale workflowId from database
         if (!workflowSignaled) {
-          console.log(`Clearing stale workflowId for application ${params.id}`)
           await ApplicationService.setWorkflowId(params.id, null)
         }
       } catch (signalError) {
-        console.error('Failed to signal workflow about status update:', signalError)
+        console.error('Failed to signal workflow:', signalError)
       }
     }
 

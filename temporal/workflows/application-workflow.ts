@@ -5,7 +5,6 @@ import type * as activities from '../activities/application-activities'
 const {
   sendDeadlineReminder,
   archiveApplication,
-  createTimelineEvent,
   updateApplicationStatus,
   generateCoverLetter,
   uploadToBlob,
@@ -89,10 +88,8 @@ export async function ApplicationWorkflow(applicationId: string, deadline: Date 
     state.lastStatusNotes = notes
     state.updatedAt = new Date()
 
-    // Create timeline event
-    await createTimelineEvent(applicationId, newStatus, notes)
-
-    // Update application status in database
+    // Note: Timeline event and database update are already handled by the API route
+    // This workflow only handles workflow-specific logic and notifications
     await updateApplicationStatus(applicationId, newStatus, notes)
 
     // Handle final statuses

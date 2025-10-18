@@ -175,6 +175,33 @@ export class ApplicationService {
 
   static async updateStatus(id: string, data: UpdateStatusInput) {
     return await prisma.$transaction(async (tx) => {
+      // Check for recent duplicate timeline events (within last 5 seconds)
+      const recentEvents = await tx.timelineEvent.findMany({
+        where: {
+          applicationId: id,
+          status: data.status,
+          note: data.notes,
+          timestamp: {
+            gte: new Date(Date.now() - 5000) // Last 5 seconds
+          }
+        }
+      });
+
+      if (recentEvents.length > 0) {
+        // Still update the application but skip timeline event
+        const application = await tx.application.update({
+          where: { id },
+          data: {
+            status: data.status,
+            notes: data.notes,
+            interviewDate: data.interviewDate,
+            updatedAt: new Date(),
+          },
+        });
+        
+        return application;
+      }
+      
       // Update application status
       const application = await tx.application.update({
         where: { id },
@@ -187,7 +214,7 @@ export class ApplicationService {
       })
 
       // Create timeline event
-      await tx.timelineEvent.create({
+      const timelineEvent = await tx.timelineEvent.create({
         data: {
           applicationId: id,
           status: data.status,

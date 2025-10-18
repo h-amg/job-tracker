@@ -81,20 +81,23 @@ export async function updateApplicationStatus(
   status: string,
   notes?: string
 ): Promise<void> {
-  log.info(`Updating application status for ${applicationId}`, { status, notes })
+  log.info(`updateApplicationStatus activity called`, { 
+    applicationId, 
+    status, 
+    notes
+  })
 
   try {
-    await ApplicationService.updateStatus(applicationId, {
-      status: status as ApplicationStatus,
-      notes,
-    })
-
+    // Note: The actual database update is already handled by the API route
+    // This activity is only responsible for workflow-specific logic
+    
+    log.info(`Creating status update notification`);
     // Create status update notification
     await NotificationService.createStatusUpdateNotification(applicationId, status)
 
-    log.info(`Application status updated for ${applicationId}`)
+    log.info(`Status update notification processed`)
   } catch (error) {
-    log.error(`Failed to update application status for ${applicationId}`, {
+    log.error(`Failed to process status update notification`, {
       error: error instanceof Error ? error.message : String(error),
     })
     throw error
