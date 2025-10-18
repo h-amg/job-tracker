@@ -12,6 +12,42 @@ A comprehensive job application management system built with Next.js, Temporal w
 - **Timeline Tracking**: Visual timeline of application status changes
 - **File Storage**: Secure cloud storage for resumes and cover letters
 
+## 🌐 Live Demo
+
+Try the application right now! Visit the live demo at [https://job-tracker-rsa.vercel.app/](https://job-tracker-rsa.vercel.app/)
+
+### How to Use the Demo
+
+1. **Explore the Dashboard**
+   - View the clean, minimalist interface
+   - Check out the stats overview cards
+   - Use the search bar to find applications by company name
+   - Filter applications by status using the status badges
+
+2. **Create a New Application**
+   - Click the "Add Application" button
+   - Fill in company details, position, and deadline
+   - Upload a resume (PDF format recommended)
+   - Watch the AI-powered resume extraction in action
+
+3. **Experience AI Features**
+   - Resume text extraction happens automatically
+   - Generate personalized cover letters using OpenAI
+   - Real-time notifications appear as processes complete
+
+4. **Navigate the Interface**
+   - Switch between Dashboard and Archived views
+   - Click on applications to view detailed timelines
+   - Use the calendar view for interview scheduling
+   - Check the notification center for updates
+
+5. **Test Workflow Features**
+   - Update application statuses and see timeline updates
+   - Experience automatic deadline reminders
+   - Watch applications move through the lifecycle states
+
+The demo showcases all core features including Temporal workflows, AI-powered resume processing, real-time notifications, and the intuitive user interface.
+
 ## 🎨 Design Philosophy
 
 ### User Experience Principles
