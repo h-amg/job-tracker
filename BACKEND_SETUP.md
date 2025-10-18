@@ -33,8 +33,14 @@ This guide will help you set up the complete backend infrastructure for the Job 
    BLOB_READ_WRITE_TOKEN="vercel_blob_rw_your-token-here"
 
    # Temporal Configuration
+   # For local development (no authentication required)
    TEMPORAL_ADDRESS="localhost:7233"
    TEMPORAL_NAMESPACE="default"
+   
+   # For Temporal Cloud with API Key authentication (recommended)
+   # TEMPORAL_ADDRESS="your-namespace.tmprl.cloud:7233"
+   # TEMPORAL_NAMESPACE="your-namespace"
+   # TEMPORAL_API_KEY="your-temporal-api-key-here"
 
    # Next.js
    NEXTAUTH_URL="http://localhost:3000"
@@ -93,15 +99,29 @@ npm run db:seed
 
 ### Production (Temporal Cloud)
 
+### API Key Authentication (Recommended)
+
 1. Sign up at [Temporal Cloud](https://temporal.io/cloud)
 2. Create a namespace
-3. Download mTLS certificates
+3. Generate an API key:
+   - Go to your namespace settings
+   - Navigate to "API Keys" section
+   - Click "Create API Key"
+   - Set appropriate permissions (read/write for your namespace)
+   - Set expiration date (recommended: 90 days)
+   - Copy the API key immediately (it won't be shown again)
 4. Update environment variables:
    ```env
    TEMPORAL_ADDRESS="your-namespace.tmprl.cloud:7233"
-   TEMPORAL_CERT_PATH="/path/to/cert.pem"
-   TEMPORAL_KEY_PATH="/path/to/key.pem"
+   TEMPORAL_NAMESPACE="your-namespace"
+   TEMPORAL_API_KEY="your-temporal-api-key-here"
    ```
+
+#### API Key Benefits:
+- **Simpler setup**: No certificate management
+- **Better security**: Keys can be rotated easily
+- **Environment flexibility**: Same key works across different environments
+- **Easier CI/CD**: No certificate files to manage in deployment pipelines
 
 ## 4. File Storage Setup
 

@@ -14,10 +14,11 @@ export class TemporalClient {
 
   static async initialize() {
     try {
+      // Determine connection configuration based on environment
+      const connectionConfig = this.getConnectionConfig()
+
       // Create connection
-      this.connection = await Connection.connect({
-        address: process.env.TEMPORAL_ADDRESS || 'localhost:7233',
-      })
+      this.connection = await Connection.connect(connectionConfig)
 
       // Create client
       this.client = new Client({
@@ -28,6 +29,27 @@ export class TemporalClient {
     } catch (error) {
       console.error('Failed to initialize Temporal client:', error)
       throw error
+    }
+  }
+
+  private static getConnectionConfig() {
+    const address = process.env.TEMPORAL_ADDRESS || 'localhost:7233'
+    const apiKey = process.env.TEMPORAL_API_KEY
+
+    // For local development without authentication
+    if (!apiKey) {
+      return {
+        address,
+      }
+    }
+
+    // For Temporal Cloud with API key authentication
+    return {
+      address,
+      tls: true,
+      metadata: {
+        'authorization': `Bearer ${apiKey}`,
+      },
     }
   }
 

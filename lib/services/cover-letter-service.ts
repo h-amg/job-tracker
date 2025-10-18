@@ -1,5 +1,7 @@
 import OpenAI from 'openai'
 import { z } from 'zod'
+import { COVER_LETTER_SYSTEM_MESSAGE } from './cover-letter-prompts'
+import { COVER_LETTER_PROMPT_TEMPLATE } from './cover-letter-template'
 
 export const GenerateCoverLetterSchema = z.object({
   jobDescription: z.string().min(1, 'Job description is required'),
@@ -39,7 +41,7 @@ export class CoverLetterService {
         messages: [
           {
             role: 'system',
-            content: 'You are a professional career coach and cover letter writer. Create compelling, personalized cover letters that highlight relevant skills and experiences. Keep the tone professional but engaging.',
+            content: COVER_LETTER_SYSTEM_MESSAGE,
           },
           {
             role: 'user',
@@ -74,54 +76,14 @@ export class CoverLetterService {
       applicantPhone,
     } = input
 
-    let prompt = `Write a professional cover letter for the following position:
-
-Company: ${companyName}
-Role: ${role}
-
-Job Description:
-${jobDescription}
-
-`
-
-    if (resumeContent) {
-      prompt += `Applicant's Resume/Background:
-${resumeContent}
-
-`
-    }
-
-    if (applicantName) {
-      prompt += `Applicant Name: ${applicantName}\n`
-    }
-    if (applicantEmail) {
-      prompt += `Applicant Email: ${applicantEmail}\n`
-    }
-    if (applicantPhone) {
-      prompt += `Applicant Phone: ${applicantPhone}\n`
-    }
-
-    prompt += `
-Please create a compelling cover letter that:
-1. Addresses the specific requirements mentioned in the job description
-2. Highlights relevant skills and experiences
-3. Demonstrates knowledge of the company and role
-4. Shows enthusiasm for the position
-5. Includes a clear call to action
-6. Is professional in tone but engaging
-7. Is approximately 3-4 paragraphs long
-
-Format the cover letter with proper business letter structure including:
-- Date
-- Company address (use a generic format)
-- Salutation
-- Body paragraphs
-- Closing
-- Signature line
-
-Do not include any placeholder text or brackets. Write the complete, ready-to-use cover letter.`
-
-    return prompt
+    return COVER_LETTER_PROMPT_TEMPLATE
+      .replace('{{resume_content}}', resumeContent || 'Not provided')
+      .replace('{{job_description}}', jobDescription)
+      .replace('{{company_name}}', companyName)
+      .replace('{{role}}', role)
+      .replace('{{applicant_name}}', applicantName || 'Not provided')
+      .replace('{{applicant_email}}', applicantEmail || 'Not provided')
+      .replace('{{applicant_phone}}', applicantPhone || 'Not provided')
   }
 
   static async generateCoverLetterWithRetry(

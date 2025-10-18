@@ -4,11 +4,33 @@ import * as activities from './activities/application-activities'
 import { ApplicationWorkflow, CoverLetterGenerationWorkflow } from './workflows/application-workflow'
 import { ResumeExtractionWorkflow } from './workflows/resume-extraction-workflow'
 
+function getConnectionConfig() {
+  const address = process.env.TEMPORAL_ADDRESS || 'localhost:7233'
+  const apiKey = process.env.TEMPORAL_API_KEY
+
+  // For local development without authentication
+  if (!apiKey) {
+    return {
+      address,
+    }
+  }
+
+  // For Temporal Cloud with API key authentication
+  return {
+    address,
+    tls: true,
+    metadata: {
+      'authorization': `Bearer ${apiKey}`,
+    },
+  }
+}
+
 async function run() {
+  // Get connection configuration
+  const connectionConfig = getConnectionConfig()
+  
   // Create native worker connection (NOT the client Connection)
-  const connection = await NativeConnection.connect({
-    address: process.env.TEMPORAL_ADDRESS || 'localhost:7233',
-  })
+  const connection = await NativeConnection.connect(connectionConfig)
 
   // Create worker
   const worker = await Worker.create({
