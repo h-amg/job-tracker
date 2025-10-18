@@ -6,7 +6,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { CalendarIcon, ClockIcon, BuildingIcon, BriefcaseIcon, XIcon } from "lucide-react";
+import { CalendarIcon, ClockIcon, BuildingIcon, BriefcaseIcon } from "lucide-react";
 import type { Application } from "@/lib/data/job-applications-data";
 
 // React Big Calendar

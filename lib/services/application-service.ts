@@ -214,7 +214,7 @@ export class ApplicationService {
       })
 
       // Create timeline event
-      const timelineEvent = await tx.timelineEvent.create({
+      await tx.timelineEvent.create({
         data: {
           applicationId: id,
           status: data.status,

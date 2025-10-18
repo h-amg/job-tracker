@@ -55,7 +55,7 @@ export class ResumeExtractionService {
   /**
    * Handles legacy .doc format (not supported by mammoth)
    */
-  static async extractTextFromDoc(buffer: Buffer): Promise<string> {
+  static async extractTextFromDoc(): Promise<string> {
     throw new Error('Legacy .doc format is not supported. Please convert to .docx format.')
   }
 

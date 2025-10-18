@@ -121,7 +121,7 @@ export class TemporalClient {
     return true
   }
 
-  static async cancelWorkflow(workflowId: string, reason?: string): Promise<boolean> {
+  static async cancelWorkflow(workflowId: string): Promise<boolean> {
     // Check if workflow exists before cancelling
     const exists = await this.workflowExists(workflowId)
     if (!exists) {
@@ -206,7 +206,7 @@ export class TemporalClient {
         pageSize: 1,
       })
       return true
-    } catch (error) {
+    } catch {
       return false
     }
   }

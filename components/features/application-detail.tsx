@@ -157,7 +157,7 @@ export function ApplicationDetail({ applicationId }: ApplicationDetailProps) {
   };
 
   // Handle application update
-  const handleApplicationUpdate = async (data: any) => {
+  const handleApplicationUpdate = async (data: Partial<Application>) => {
     if (!application) return;
     
     setIsUpdating(true);
@@ -202,7 +202,7 @@ export function ApplicationDetail({ applicationId }: ApplicationDetailProps) {
   };
 
   // Handle status update
-  const handleStatusUpdate = async (data: any) => {
+  const handleStatusUpdate = async (data: { status: ApplicationStatus; notes?: string; interviewDate?: Date }) => {
     if (!application) return;
     
     setIsUpdatingStatus(true);

@@ -4,7 +4,6 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { Calendar } from "@/components/ui/calendar";
 import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { 
   CalendarIcon, 
@@ -13,7 +12,6 @@ import {
   BriefcaseIcon
 } from "lucide-react";
 import { type Application } from "@/lib/data/job-applications-data";
-import { cn } from "@/lib/utils";
 
 interface CalendarViewProps {
   applications: Application[];
@@ -65,36 +63,6 @@ export function CalendarView({ applications }: CalendarViewProps) {
     ? interviewsByDate[selectedDate.toDateString()] || []
     : [];
 
-  // Custom day content to show interview indicators
-  const DayContent = ({ date, displayMonth }: { date: Date; displayMonth: Date }) => {
-    const dateKey = date.toDateString();
-    const dayInterviews = interviewsByDate[dateKey] || [];
-    const isCurrentMonth = date.getMonth() === displayMonth.getMonth();
-    
-    return (
-      <div className="relative w-full h-full flex flex-col items-center justify-center">
-        <span className={cn(
-          "text-sm",
-          !isCurrentMonth && "text-muted-foreground opacity-50"
-        )}>
-          {date.getDate()}
-        </span>
-        {dayInterviews.length > 0 && isCurrentMonth && (
-          <div className="flex gap-0.5 mt-1">
-            {dayInterviews.slice(0, 3).map((_, index) => (
-              <div
-                key={index}
-                className="w-1.5 h-1.5 bg-indigo-600 dark:bg-indigo-400 rounded-full"
-              />
-            ))}
-            {dayInterviews.length > 3 && (
-              <div className="w-1.5 h-1.5 bg-indigo-400 dark:bg-indigo-500 rounded-full" />
-            )}
-          </div>
-        )}
-      </div>
-    );
-  };
 
   const handleDateClick = (date: Date | undefined) => {
     if (date) {

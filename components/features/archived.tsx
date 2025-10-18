@@ -118,12 +118,12 @@ export function Archived() {
     setCurrentPage(1);
     setHasNextPage(true);
     loadArchivedApplications(1, false);
-  }, [debouncedSearchQuery]);
+  }, [debouncedSearchQuery, loadArchivedApplications]);
 
   // Fetch applications on component mount
   useEffect(() => {
     loadArchivedApplications(1, false);
-  }, []);
+  }, [loadArchivedApplications]);
 
   // Infinite scroll hook
   const { elementRef } = useInfiniteScroll({

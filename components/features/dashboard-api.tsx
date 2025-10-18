@@ -40,7 +40,6 @@ export function Dashboard() {
   const [paginationInfo, setPaginationInfo] = useState<PaginationInfo | null>(null);
 
   // API call hooks
-  const { execute: fetchApplications } = useApiCall<ApiApplication[]>();
   const { execute: createApplication, loading: createLoading } = useApiCall<ApiApplication>();
   const { execute: updateStatus } = useApiCall<ApiApplication>();
   const { execute: archiveApplication } = useApiCall<ApiApplication>();
@@ -63,7 +62,7 @@ export function Dashboard() {
       });
       
       if (response.success && response.data) {
-        const responseData = response as any;
+        const responseData = response as { data: ApiApplication[]; pagination?: PaginationInfo };
         setAllApplications(responseData.data);
       }
     } catch (err) {
@@ -89,12 +88,12 @@ export function Dashboard() {
       });
       
       if (response.success && response.data) {
-        const responseData = response as any; // Type assertion for the actual response structure
+        const responseData = response as { data: ApiApplication[]; pagination?: PaginationInfo }; // Type assertion for the actual response structure
         if (append) {
           setApplications(prev => {
             // Filter out duplicates by ID to prevent duplicate keys
             const existingIds = new Set(prev.map(app => app.id));
-            const newApps = responseData.data.filter((app: any) => !existingIds.has(app.id));
+            const newApps = responseData.data.filter((app: ApiApplication) => !existingIds.has(app.id));
             return [...prev, ...newApps];
           });
         } else {
@@ -134,7 +133,7 @@ export function Dashboard() {
     setCurrentPage(1);
     setHasNextPage(true);
     loadApplications(1, false);
-  }, [statusFilter, debouncedSearchQuery]);
+  }, [statusFilter, debouncedSearchQuery, loadApplications]);
 
   // Reset to cards view when filter changes away from Interview
   useEffect(() => {
@@ -147,7 +146,7 @@ export function Dashboard() {
   useEffect(() => {
     loadAllApplications(); // Load all applications for stats
     loadApplications(1, false); // Load filtered applications for display
-  }, []);
+  }, [loadAllApplications, loadApplications]);
 
   // Infinite scroll hook
   const { elementRef } = useInfiniteScroll({

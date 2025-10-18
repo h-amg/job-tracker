@@ -54,10 +54,10 @@ export async function POST(request: NextRequest) {
     
     const notification = await NotificationService.createNotification({
       applicationId: validatedData.applicationId,
-      type: validatedData.type as any, // Type assertion needed due to enum mismatch
+      type: validatedData.type,
       title: validatedData.title,
       message: validatedData.message,
-      status: validatedData.status as any, // Type assertion needed due to enum mismatch
+      status: validatedData.status,
     })
 
     return NextResponse.json({

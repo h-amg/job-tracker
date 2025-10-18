@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import {
   Dialog,
   DialogContent,
@@ -43,9 +43,9 @@ export function CoverLetterModal({
     if (open && application.id) {
       fetchCoverLetter();
     }
-  }, [open, application.id]);
+  }, [open, application.id, fetchCoverLetter]);
 
-  const fetchCoverLetter = async () => {
+  const fetchCoverLetter = useCallback(async () => {
     setIsLoading(true);
     setError(null);
     setNotFound(false);
@@ -75,7 +75,7 @@ export function CoverLetterModal({
     } finally {
       setIsLoading(false);
     }
-  };
+  }, [application.id]);
 
   const handleCopy = async () => {
     try {

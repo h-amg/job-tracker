@@ -116,10 +116,9 @@ export function PaginationComponent({
   currentPage,
   totalPages,
   onPageChange,
-  showFirstLast = true,
   maxVisiblePages = 5,
   className,
-}: PaginationProps) {
+}: Omit<PaginationProps, 'showFirstLast'>) {
   if (totalPages <= 1) return null
 
   const getVisiblePages = () => {

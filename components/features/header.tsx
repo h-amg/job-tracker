@@ -1,6 +1,5 @@
 "use client";
 
-import { useState, useEffect } from "react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
@@ -13,7 +12,6 @@ import {
 } from "lucide-react";
 import {
   NotificationCenter,
-  type Notification,
 } from "@/components/features/notification-center";
 import { useNotificationStream } from "@/hooks/use-notification-stream";
 
@@ -28,8 +26,6 @@ export function Header({ onAddApplication }: HeaderProps) {
   // Use the notification stream hook
   const {
     notifications,
-    isConnected,
-    error,
     markAsRead,
     dismissNotification,
     deleteAllNotifications,
@@ -89,7 +85,7 @@ export function Header({ onAddApplication }: HeaderProps) {
             {navItems.map((item) => {
               const Icon = item.icon;
               return (
-                <Link key={item.path} href={item.path as any}>
+                <Link key={item.path} href={item.path}>
                   <Button
                     variant={isActive(item.path) ? "secondary" : "ghost"}
                     size="sm"
@@ -131,7 +127,7 @@ export function Header({ onAddApplication }: HeaderProps) {
           {navItems.map((item) => {
             const Icon = item.icon;
             return (
-              <Link key={item.path} href={item.path as any}>
+              <Link key={item.path} href={item.path}>
                 <Button
                   variant={isActive(item.path) ? "secondary" : "ghost"}
                   size="sm"
